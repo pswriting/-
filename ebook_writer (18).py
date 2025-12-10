@@ -1467,26 +1467,37 @@ with tabs[3]:
                             new_subtopics.append(cleaned)
                 
                 if new_subtopics:
-                    # 세션에 임시 저장 (입력창에 표시용)
-                    st.session_state[f'temp_subtopics_{selected_chapter}'] = new_subtopics[:3]
+                    # 3개 맞추기
+                    while len(new_subtopics) < 3:
+                        new_subtopics.append(f'소제목 {len(new_subtopics)+1}')
+                    
+                    # 바로 chapter_data에 적용 (저장 전 상태)
+                    chapter_data['subtopics'] = new_subtopics[:3]
+                    for st_name in new_subtopics[:3]:
+                        if st_name not in chapter_data['subtopic_data']:
+                            chapter_data['subtopic_data'][st_name] = {'questions': [], 'answers': [], 'content': ''}
+                    
+                    # key 변경용 카운터 증가
+                    if 'subtopic_gen_count' not in st.session_state:
+                        st.session_state['subtopic_gen_count'] = 0
+                    st.session_state['subtopic_gen_count'] += 1
+                    
+                    st.success("생성 완료! 수정 후 저장하세요.")
                     st.rerun()
         
-        # 임시 저장된 AI 소제목이 있으면 그걸 기본값으로, 없으면 기존 소제목
-        temp_key = f'temp_subtopics_{selected_chapter}'
-        if temp_key in st.session_state:
-            display_subtopics = st.session_state[temp_key]
-            # 3개 맞추기
-            while len(display_subtopics) < 3:
-                display_subtopics.append(f'소제목 {len(display_subtopics)+1}')
-        else:
-            display_subtopics = chapter_data['subtopics']
+        # key에 카운터 포함시켜서 새 값이 표시되게
+        gen_count = st.session_state.get('subtopic_gen_count', 0)
         
         col_edit1, col_edit2 = st.columns([3, 1])
         with col_edit1:
             edited_subtopics = []
             for i in range(3):
-                default_val = display_subtopics[i] if i < len(display_subtopics) else f'소제목 {i+1}'
-                edited_st = st.text_input(f"소제목 {i+1}", value=default_val, key=f"subtopic_edit_{selected_chapter}_{i}")
+                default_val = chapter_data['subtopics'][i] if i < len(chapter_data['subtopics']) else f'소제목 {i+1}'
+                edited_st = st.text_input(
+                    f"소제목 {i+1}", 
+                    value=default_val, 
+                    key=f"subtopic_edit_{selected_chapter}_{i}_{gen_count}"
+                )
                 edited_subtopics.append(edited_st)
         
         with col_edit2:
@@ -1505,11 +1516,6 @@ with tabs[3]:
                 
                 chapter_data['subtopics'] = [s for s in edited_subtopics if s.strip()]
                 chapter_data['subtopic_data'] = new_subtopic_data
-                
-                # 임시 저장 삭제
-                if temp_key in st.session_state:
-                    del st.session_state[temp_key]
-                
                 st.success("저장됨")
                 st.rerun()
         
