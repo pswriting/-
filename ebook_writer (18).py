@@ -732,119 +732,78 @@ def generate_titles_advanced(topic, persona, pain_points):
     return ask_ai("베스트셀러 작가", prompt, temperature=0.9)
 
 def generate_concept(topic, persona, pain_points):
-    prompt = f"""당신은 자청(역행자), 엠제이 드마코(부의 추월차선)급 베스트셀러 작가입니다.
-당신의 한 줄 컨셉은 독자의 세계관을 뒤흔들어 "이 책 안 읽으면 큰일 나겠다"는 느낌을 줍니다.
-
-주제: {topic}
+    prompt = f"""주제: {topic}
 타겟: {persona}
-타겟의 진짜 속마음(숨기고 싶은 욕망과 두려움): {pain_points}
+타겟의 고민: {pain_points}
 
-[컨셉이란?]
-컨셉은 "이 책을 왜 사야 하는지"를 한 문장으로 설득하는 것입니다.
-좋은 컨셉은 타겟의 머릿속 상식을 정면으로 부정합니다.
-"엥? 이게 무슨 말이야?" → "어... 맞는 것 같기도?" → "이거 읽어야겠다"
+위 주제에 대해 "이 책 안 읽으면 손해"라는 느낌을 주는 한 줄 컨셉 5개를 만들어주세요.
 
-[나쁜 컨셉 예시 - 절대 이렇게 쓰지 마세요]
-- "주식 투자의 기초부터 차근차근 알려드립니다" (교과서)
-- "누구나 할 수 있는 쉬운 투자 방법" (믿음 안 감)
-- "체계적인 투자 시스템 구축하기" (졸림)
-- "성공하는 투자자들의 습관" (뻔함)
+좋은 컨셉의 조건:
+- 상식을 정면으로 부정 ("~한다고? 틀렸다")
+- 호기심 자극 ("진짜 이유는 따로 있다")
+- 구체적 숫자 포함 ("3개월 만에", "상위 1%")
 
-[좋은 컨셉 예시 - 자청/드마코 스타일]
-- "월급쟁이는 절대 부자가 될 수 없다는 거짓말" (상식 파괴)
-- "나는 '감'으로 10억을 만들었다" (역설 + 구체적 숫자)
-- "열심히 일하는 사람이 가난한 진짜 이유" (도발)
-- "차트를 보는 순간 당신은 이미 졌다" (충격)
-- "운이 좋은 사람들의 불편한 비밀" (호기심)
-- "실패해야 성공한다는 말은 거짓말이다" (통념 부정)
+출력 형식 (이 형식만 출력하세요):
 
-[컨셉 작성 공식]
-1. 역설형: "A하면 B한다고? 틀렸다. A하면 C한다"
-2. 상식파괴형: "당신이 알고 있는 X는 전부 틀렸다"
-3. 비밀폭로형: "아무도 알려주지 않는 진짜 Y"
-4. 소외자극형: "상위 1%만 알고 있는 Z"
-
-[미션]
-{topic}에 대해 타겟이 "엥? 이게 무슨 말이지?" 하고 멈칫한 뒤, 
-"이거 읽어야겠다"고 결심하게 만드는 한 줄 컨셉 5개를 만들어주세요.
-자청이 "역행자"에서 보여준 것처럼, 상식을 뒤집어야 합니다.
-
-형식:
-1. [한 줄 컨셉] 
-   → 이 컨셉이 작동하는 심리학적 이유 (왜 타겟이 이 말에 꽂히는가)
+1. [한 줄 컨셉]
+   → 왜 끌리는가
 
 2. [한 줄 컨셉]
-   → 이 컨셉이 작동하는 심리학적 이유
-   
-(5개까지)"""
-    return ask_ai("베스트셀러 작가", prompt, temperature=0.9)
+   → 왜 끌리는가
+
+3. [한 줄 컨셉]
+   → 왜 끌리는가
+
+4. [한 줄 컨셉]
+   → 왜 끌리는가
+
+5. [한 줄 컨셉]
+   → 왜 끌리는가"""
+    return ask_ai("카피라이터", prompt, temperature=0.9)
 
 def generate_outline(topic, persona, pain_points):
-    prompt = f"""당신은 자청(역행자), 엠제이 드마코(부의 추월차선), 김승호(돈의 속성)의 목차를 설계한 출판 기획자입니다.
-당신이 만든 목차는 독자가 책을 펼치자마자 "이건 끝까지 읽어야 해"라고 결심하게 만듭니다.
+    prompt = f"""주제: {topic}
+타겟: {persona}
+타겟의 고민: {pain_points}
 
-[기획 정보]
-주제: {topic}
-타겟 독자: {persona}
-타겟의 숨겨진 욕망과 두려움: {pain_points}
+위 주제로 6~7개 챕터 목차를 설계해주세요.
 
-[베스트셀러 목차의 비밀 - 자청/드마코가 사용한 기법]
+[챕터 제목 규칙]
+- 질문형: "왜 ~할까?"
+- 도발형: "~는 거짓말이다"
+- 비밀형: "아무도 말 안 하는 ~"
+- 숫자형: "3개월 만에 일어난 일"
 
-1. 챕터 제목은 "호기심 폭탄"이어야 한다
-   - 질문형: "왜 열심히 하는 사람이 가난할까?" (답이 궁금해서 읽음)
-   - 도발형: "당신이 알고 있는 것은 전부 틀렸다" (반박하고 싶어서 읽음)
-   - 비밀형: "아무도 말해주지 않는 진실" (소외되기 싫어서 읽음)
-   - 스토리형: "나는 그날 모든 것을 잃었다" (뒷이야기가 궁금해서 읽음)
-   - 숫자형: "31개월 만에 일어난 일" (구체적이라 믿음이 감)
+[소제목 규칙 - 중요!]
+소제목도 챕터 제목처럼 매력적이어야 합니다.
+- BAD: "기본 개념", "실전 적용", "정리"
+- GOOD: "그날 통장 잔고 47만원", "첫 수익이 찍힌 날", "모두가 틀렸다고 했다"
 
-2. 감정선 설계 (독자를 롤러코스터 태우기)
-   - 챕터1: 공감 & 위로 → "나도 너처럼 바닥이었어"
-   - 챕터2: 문제 제기 → "근데 네가 모르는 게 있어"
-   - 챕터3: 충격 & 반전 → "사실 이게 진짜야" (여기서 세계관 붕괴)
-   - 챕터4: 깨달음 → "이걸 알면 달라져"
-   - 챕터5: 실전 → "이렇게 하면 돼"
-   - 챕터6: 마인드셋 → "근데 이게 제일 중요해"
-   - 챕터7: 비전 & 동기부여 → "이렇게 되면 인생이 바뀌어"
+소제목은 구체적 장면, 숫자, 스토리가 느껴져야 읽고 싶어집니다.
 
-3. "역행자" 목차 레퍼런스
-   - "운이 좋은 사람들의 비밀" → 비밀 공개형
-   - "자의식 해체" → 낯선 개념 제시형
-   - "정체성 만들기" → 명확한 해결책형
+[감정선 흐름]
+챕터1: 공감 (나도 그랬어)
+챕터2: 문제 제기 (근데 이게 문제야)
+챕터3: 반전 (사실은 이거였어)
+챕터4: 깨달음 (이걸 알면 달라져)
+챕터5: 실전 (이렇게 해)
+챕터6: 마인드셋 (이게 제일 중요해)
+챕터7: 비전 (이렇게 되면 인생 바뀜)
 
-4. "부의 추월차선" 목차 레퍼런스
-   - "부자들은 왜 로또를 사지 않을까" → 역설형 질문
-   - "인도에서 서행차선으로" → 메타포 활용
-   - "추월차선으로 갈아타는 법" → 행동 유도형
+출력 형식 (이 형식만 출력):
 
-[절대 금지 - 이런 목차는 절대 쓰지 마세요]
-- "1장: 기초 이해하기" (교과서)
-- "2장: 실전 적용하기" (밋밋함)
-- "~의 중요성", "~이란 무엇인가" (지루함)
-- "결론 및 정리" (학술 논문)
-- "입문자를 위한", "초보자 가이드" (매력 없음)
-
-[미션]
-{topic}에 대해 6~7개 챕터의 목차를 설계해주세요.
-
-조건:
-1. 각 챕터 제목만 봐도 "이건 뭐지?" 하고 궁금해야 함
-2. 챕터 순서대로 읽으면 감정선이 자연스럽게 흘러야 함
-3. 자청/드마코처럼 독자의 상식을 뒤집는 제목이 최소 2개 포함
-4. 소제목 3개는 챕터 내용을 구체적으로 힌트
-
-형식:
 ## 챕터1: [호기심 유발 제목]
-- [소제목1: 구체적 내용 힌트]
-- [소제목2: 구체적 내용 힌트]
-- [소제목3: 구체적 내용 힌트]
+- [매력적인 소제목1]
+- [매력적인 소제목2]
+- [매력적인 소제목3]
 
-## 챕터2: [도발적/역설적 제목]
-- [소제목1]
-- [소제목2]
-- [소제목3]
+## 챕터2: [도발적 제목]
+- [매력적인 소제목1]
+- [매력적인 소제목2]
+- [매력적인 소제목3]
 
-(총 6~7개 챕터)"""
-    return ask_ai("베스트셀러 출판기획자", prompt, temperature=0.85)
+(6~7개 챕터까지)"""
+    return ask_ai("출판기획자", prompt, temperature=0.85)
 
 def generate_interview_questions(subtopic_title, chapter_title, topic):
     prompt = f"""당신은 베스트셀러 작가의 고스트라이터입니다.
@@ -1564,6 +1523,39 @@ with tabs[3]:
             status = "✅" if has_content else "⬜"
             char_count = len(st_data.get('content', ''))
             st.markdown(f"{status} **{st_name}** - {char_count:,}자")
+        
+        # === 전체 미리보기 섹션 ===
+        st.markdown("---")
+        st.markdown("### 📖 전체 미리보기")
+        
+        with st.expander("작성된 전체 내용 보기 (클릭해서 펼치기)", expanded=False):
+            preview_text = ""
+            total_preview_chars = 0
+            
+            for ch in st.session_state['outline']:
+                if ch in st.session_state['chapters']:
+                    ch_data_preview = st.session_state['chapters'][ch]
+                    chapter_has_content = False
+                    chapter_content = ""
+                    
+                    if 'subtopic_data' in ch_data_preview:
+                        for st_name in ch_data_preview.get('subtopics', []):
+                            st_data_preview = ch_data_preview['subtopic_data'].get(st_name, {})
+                            if st_data_preview.get('content'):
+                                chapter_has_content = True
+                                chapter_content += f"\n\n### {st_name}\n\n"
+                                chapter_content += st_data_preview['content']
+                    
+                    if chapter_has_content:
+                        preview_text += f"\n\n---\n\n## {ch}\n"
+                        preview_text += chapter_content
+                        total_preview_chars += len(chapter_content)
+            
+            if preview_text:
+                st.markdown(f"**총 {total_preview_chars:,}자** (약 {total_preview_chars//1500}페이지)")
+                st.markdown(preview_text)
+            else:
+                st.info("아직 작성된 내용이 없습니다.")
 
 # === TAB 5: 문체 다듬기 ===
 with tabs[4]:
@@ -1639,6 +1631,80 @@ with tabs[4]:
 with tabs[5]:
     st.markdown("## 최종 출력")
     
+    # 스타일 설정 섹션
+    st.markdown('<p class="section-label">Style Settings</p>', unsafe_allow_html=True)
+    st.markdown("### 📝 전자책 스타일 설정")
+    
+    col_style1, col_style2, col_style3, col_style4 = st.columns(4)
+    
+    with col_style1:
+        font_family = st.selectbox(
+            "본문 폰트",
+            ["S-Core Dream", "Pretendard", "Noto Sans KR", "Noto Serif KR", "Gothic A1", "Nanum Gothic", "Nanum Myeongjo"],
+            index=0,
+            key="font_family"
+        )
+    
+    with col_style2:
+        font_size = st.selectbox(
+            "본문 크기",
+            ["14px", "15px", "16px", "17px", "18px", "20px"],
+            index=2,
+            key="font_size"
+        )
+    
+    with col_style3:
+        line_height = st.selectbox(
+            "줄 간격",
+            ["1.6", "1.8", "2.0", "2.2"],
+            index=1,
+            key="line_height"
+        )
+    
+    with col_style4:
+        text_color = st.selectbox(
+            "본문 색상",
+            ["#222222", "#333333", "#444444", "#000000"],
+            index=0,
+            key="text_color"
+        )
+    
+    col_style5, col_style6, col_style7, col_style8 = st.columns(4)
+    
+    with col_style5:
+        title_size = st.selectbox(
+            "제목 크기",
+            ["28px", "32px", "36px", "40px"],
+            index=1,
+            key="title_size"
+        )
+    
+    with col_style6:
+        chapter_size = st.selectbox(
+            "챕터 크기",
+            ["22px", "24px", "26px", "28px"],
+            index=1,
+            key="chapter_size"
+        )
+    
+    with col_style7:
+        subtopic_size = st.selectbox(
+            "소제목 크기",
+            ["18px", "20px", "22px"],
+            index=1,
+            key="subtopic_size"
+        )
+    
+    with col_style8:
+        max_width = st.selectbox(
+            "본문 너비",
+            ["640px", "720px", "800px", "100%"],
+            index=1,
+            key="max_width"
+        )
+    
+    st.markdown("---")
+    
     col1, col2 = st.columns([1, 1])
     
     with col1:
@@ -1699,7 +1765,89 @@ with tabs[5]:
         
         st.markdown("---")
         
-        col_dl1, col_dl2 = st.columns(2)
+        # HTML 콘텐츠 생성 (스타일 설정 적용)
+        html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{st.session_state.get('book_title', '전자책')}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Gothic+A1:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Nanum+Myeongjo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        @font-face {{
+            font-family: 'S-Core Dream';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-3Light.woff') format('woff');
+            font-weight: 300;
+        }}
+        @font-face {{
+            font-family: 'S-Core Dream';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-5Medium.woff') format('woff');
+            font-weight: 500;
+        }}
+        @font-face {{
+            font-family: 'S-Core Dream';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-6Bold.woff') format('woff');
+            font-weight: 700;
+        }}
+        @font-face {{
+            font-family: 'Pretendard';
+            src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+            font-weight: 400;
+        }}
+        @font-face {{
+            font-family: 'Pretendard';
+            src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Bold.woff') format('woff');
+            font-weight: 700;
+        }}
+        body {{
+            font-family: '{font_family}', sans-serif;
+            max-width: {max_width};
+            margin: 0 auto;
+            padding: 60px 20px;
+            line-height: {line_height};
+            color: {text_color};
+            font-size: {font_size};
+            word-break: keep-all;
+            font-weight: 500;
+        }}
+        h1 {{
+            font-size: {title_size};
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #111;
+        }}
+        h2 {{
+            font-size: {chapter_size};
+            font-weight: 700;
+            margin-top: 60px;
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }}
+        h3 {{
+            font-size: {subtopic_size};
+            font-weight: 700;
+            margin-top: 40px;
+            margin-bottom: 15px;
+            color: #333;
+        }}
+        p {{
+            margin-bottom: 1.2em;
+            text-align: justify;
+        }}
+        hr {{
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 40px 0;
+        }}
+    </style>
+</head>
+<body>
+{full_book.replace(chr(10), '<br>')}
+</body>
+</html>"""
+        
+        col_dl1, col_dl2, col_dl3 = st.columns(3)
         with col_dl1:
             st.download_button(
                 "TXT 다운로드",
@@ -1709,29 +1857,33 @@ with tabs[5]:
             )
         
         with col_dl2:
-            html_content = f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>{st.session_state.get('book_title', '전자책')}</title>
-    <style>
-        body {{ font-family: 'Pretendard', sans-serif; max-width: 720px; margin: 0 auto; padding: 60px 20px; line-height: 1.8; color: #222; }}
-        h1 {{ font-size: 2rem; font-weight: 700; }}
-        h2 {{ font-size: 1.5rem; margin-top: 50px; }}
-        h3 {{ font-size: 1.2rem; margin-top: 30px; color: #444; }}
-    </style>
-</head>
-<body>
-{full_book.replace(chr(10), '<br>')}
-</body>
-</html>"""
-            
             st.download_button(
                 "HTML 다운로드",
                 html_content,
                 file_name=f"{st.session_state.get('book_title', 'ebook')}_{datetime.now().strftime('%Y%m%d')}.html",
                 mime="text/html"
             )
+        
+        with col_dl3:
+            if st.button("미리보기", key="preview_btn"):
+                st.session_state['show_preview'] = True
+        
+        # HTML 미리보기
+        if st.session_state.get('show_preview'):
+            st.markdown("---")
+            st.markdown("### 스타일 미리보기")
+            preview_sample = f"""
+            <div style="font-family: '{font_family}', sans-serif; max-width: {max_width}; line-height: {line_height}; color: {text_color}; font-size: {font_size}; border: 1px solid #ddd; padding: 30px; border-radius: 8px; background: #fff;">
+                <h1 style="font-size: {title_size}; font-weight: 700; color: #111; margin-bottom: 5px;">{st.session_state.get('book_title', '전자책 제목')}</h1>
+                <p style="color: #666; font-size: 14px;">{st.session_state.get('subtitle', '부제목')}</p>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                <h2 style="font-size: {chapter_size}; font-weight: 700; color: #222;">챕터1: 왜 열심히 하는 사람이 가난할까</h2>
+                <h3 style="font-size: {subtopic_size}; font-weight: 700; color: #333;">그날 통장 잔고 47만원</h3>
+                <p>2019년 3월. 통장 잔고를 확인했다. 47만원. 월급날까지 2주. 나는 바닥이었다.</p>
+                <p>솔직히 말할게. 나도 처음엔 몰랐어. 열심히만 하면 되는 줄 알았거든. 새벽 6시에 일어나서 밤 11시까지 일했어. 주말도 없었어.</p>
+            </div>
+            """
+            st.markdown(preview_sample, unsafe_allow_html=True)
     
     with col2:
         st.markdown('<p class="section-label">Marketing</p>', unsafe_allow_html=True)
