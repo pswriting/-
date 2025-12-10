@@ -598,6 +598,63 @@ with st.sidebar:
         st.caption(f"완성: {completed_chapters}개")
     
     st.markdown("---")
+    st.markdown("### 💾 저장/불러오기")
+    
+    # 저장 데이터 구성
+    save_data = {
+        'topic': st.session_state.get('topic', ''),
+        'target_persona': st.session_state.get('target_persona', ''),
+        'pain_points': st.session_state.get('pain_points', ''),
+        'one_line_concept': st.session_state.get('one_line_concept', ''),
+        'outline': st.session_state.get('outline', []),
+        'chapters': st.session_state.get('chapters', {}),
+        'book_title': st.session_state.get('book_title', ''),
+        'subtitle': st.session_state.get('subtitle', ''),
+        'market_analysis': st.session_state.get('market_analysis', ''),
+        'topic_score': st.session_state.get('topic_score'),
+        'topic_verdict': st.session_state.get('topic_verdict'),
+        'score_details': st.session_state.get('score_details'),
+        'generated_titles': st.session_state.get('generated_titles'),
+    }
+    
+    # JSON 다운로드 버튼
+    save_json = json.dumps(save_data, ensure_ascii=False, indent=2)
+    file_name = st.session_state.get('book_title', '전자책') or '전자책'
+    file_name = re.sub(r'[^\w\s가-힣-]', '', file_name)[:20]
+    
+    st.download_button(
+        "📥 작업 저장하기",
+        save_json,
+        file_name=f"{file_name}_{datetime.now().strftime('%m%d_%H%M')}.json",
+        mime="application/json",
+        use_container_width=True
+    )
+    
+    # 불러오기
+    uploaded_file = st.file_uploader(
+        "📤 작업 불러오기",
+        type=['json'],
+        label_visibility="collapsed"
+    )
+    
+    if uploaded_file is not None:
+        try:
+            loaded_data = json.loads(uploaded_file.read().decode('utf-8'))
+            
+            if st.button("불러오기 적용", use_container_width=True):
+                # 세션에 데이터 적용
+                for key in ['topic', 'target_persona', 'pain_points', 'one_line_concept', 
+                           'outline', 'chapters', 'book_title', 'subtitle', 'market_analysis',
+                           'topic_score', 'topic_verdict', 'score_details', 'generated_titles']:
+                    if key in loaded_data:
+                        st.session_state[key] = loaded_data[key]
+                
+                st.success("불러오기 완료!")
+                st.rerun()
+        except Exception as e:
+            st.error(f"파일 오류: {e}")
+    
+    st.markdown("---")
     st.markdown("### API 설정")
     
     # API 키 입력
@@ -629,6 +686,29 @@ with st.sidebar:
         st.caption("⚠️ API 키를 입력하세요")
 
 # --- AI 함수 ---
+def get_auto_save_data():
+    """자동 저장용 데이터 생성"""
+    return {
+        'topic': st.session_state.get('topic', ''),
+        'target_persona': st.session_state.get('target_persona', ''),
+        'pain_points': st.session_state.get('pain_points', ''),
+        'one_line_concept': st.session_state.get('one_line_concept', ''),
+        'outline': st.session_state.get('outline', []),
+        'chapters': st.session_state.get('chapters', {}),
+        'book_title': st.session_state.get('book_title', ''),
+        'subtitle': st.session_state.get('subtitle', ''),
+        'market_analysis': st.session_state.get('market_analysis', ''),
+        'topic_score': st.session_state.get('topic_score'),
+        'topic_verdict': st.session_state.get('topic_verdict'),
+        'score_details': st.session_state.get('score_details'),
+        'generated_titles': st.session_state.get('generated_titles'),
+        'saved_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
+
+def trigger_auto_save():
+    """자동 저장 트리거 - 세션에 플래그 설정"""
+    st.session_state['auto_save_trigger'] = True
+
 def ask_ai(system_role, prompt, temperature=0.7):
     if not api_key_input:
         return "⚠️ API 키를 먼저 입력해주세요."
@@ -1406,6 +1486,7 @@ with tabs[2]:
                             'subtopics': subtopics,
                             'subtopic_data': {st: {'questions': [], 'answers': [], 'content': ''} for st in subtopics}
                         }
+                trigger_auto_save()
                 st.success("저장됨")
         else:
             st.info("먼저 목차를 생성하세요.")
@@ -1584,6 +1665,7 @@ with tabs[3]:
                                 st.session_state['target_persona']
                             )
                             subtopic_data['content'] = content
+                            trigger_auto_save()
                 
                 if subtopic_data['content']:
                     edited_content = st.text_area(
@@ -1988,6 +2070,30 @@ with tabs[5]:
                 {st.session_state['marketing_copy'].replace(chr(10), '<br>')}
             </div>
             """, unsafe_allow_html=True)
+
+# --- 자동 저장 처리 ---
+if st.session_state.get('auto_save_trigger'):
+    st.session_state['auto_save_trigger'] = False
+    auto_save_data = get_auto_save_data()
+    auto_save_json = json.dumps(auto_save_data, ensure_ascii=False, indent=2)
+    file_name = st.session_state.get('book_title', '전자책') or '전자책'
+    file_name = re.sub(r'[^\w\s가-힣-]', '', file_name)[:20]
+    
+    st.toast("💾 자동 저장 준비됨!")
+    
+    # 사이드바에 자동 저장 다운로드 표시
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("### 🔔 자동 저장")
+        st.download_button(
+            "💾 백업 다운로드",
+            auto_save_json,
+            file_name=f"자동저장_{file_name}_{datetime.now().strftime('%H%M')}.json",
+            mime="application/json",
+            use_container_width=True,
+            type="primary"
+        )
+        st.caption("중요 작업 완료됨 - 백업 권장!")
 
 # --- 푸터 ---
 st.markdown("""
