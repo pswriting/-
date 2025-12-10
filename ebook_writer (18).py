@@ -1467,17 +1467,26 @@ with tabs[3]:
                             new_subtopics.append(cleaned)
                 
                 if new_subtopics:
-                    # 기존 데이터 초기화하고 새 소제목 적용
-                    chapter_data['subtopics'] = new_subtopics[:3]
-                    chapter_data['subtopic_data'] = {st: {'questions': [], 'answers': [], 'content': ''} for st in new_subtopics[:3]}
-                    st.success("소제목 생성 완료!")
+                    # 세션에 임시 저장 (입력창에 표시용)
+                    st.session_state[f'temp_subtopics_{selected_chapter}'] = new_subtopics[:3]
                     st.rerun()
+        
+        # 임시 저장된 AI 소제목이 있으면 그걸 기본값으로, 없으면 기존 소제목
+        temp_key = f'temp_subtopics_{selected_chapter}'
+        if temp_key in st.session_state:
+            display_subtopics = st.session_state[temp_key]
+            # 3개 맞추기
+            while len(display_subtopics) < 3:
+                display_subtopics.append(f'소제목 {len(display_subtopics)+1}')
+        else:
+            display_subtopics = chapter_data['subtopics']
         
         col_edit1, col_edit2 = st.columns([3, 1])
         with col_edit1:
             edited_subtopics = []
-            for i, st_name in enumerate(chapter_data['subtopics']):
-                edited_st = st.text_input(f"소제목 {i+1}", value=st_name, key=f"subtopic_edit_{selected_chapter}_{i}")
+            for i in range(3):
+                default_val = display_subtopics[i] if i < len(display_subtopics) else f'소제목 {i+1}'
+                edited_st = st.text_input(f"소제목 {i+1}", value=default_val, key=f"subtopic_edit_{selected_chapter}_{i}")
                 edited_subtopics.append(edited_st)
         
         with col_edit2:
@@ -1496,6 +1505,11 @@ with tabs[3]:
                 
                 chapter_data['subtopics'] = [s for s in edited_subtopics if s.strip()]
                 chapter_data['subtopic_data'] = new_subtopic_data
+                
+                # 임시 저장 삭제
+                if temp_key in st.session_state:
+                    del st.session_state[temp_key]
+                
                 st.success("저장됨")
                 st.rerun()
         
