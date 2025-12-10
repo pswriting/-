@@ -256,6 +256,30 @@ st.markdown("""
     
     /* ===== 커스텀 컴포넌트 ===== */
     
+    /* 로그인 화면 */
+    .login-container {
+        max-width: 400px;
+        margin: 100px auto;
+        padding: 40px;
+        background: #ffffff;
+        border: 1px solid #eeeeee;
+        border-radius: 20px;
+        text-align: center;
+    }
+    
+    .login-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #111111;
+        margin-bottom: 8px;
+    }
+    
+    .login-subtitle {
+        font-size: 15px;
+        color: #888888;
+        margin-bottom: 30px;
+    }
+    
     /* 히어로 섹션 */
     .hero-section {
         text-align: center;
@@ -488,6 +512,37 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+# ==========================================
+# 비밀번호 설정 (여기서 변경 가능)
+# ==========================================
+CORRECT_PASSWORD = "cashmaker2024"
+# ==========================================
+
+# --- 비밀번호 확인 ---
+if 'authenticated' not in st.session_state:
+    st.session_state['authenticated'] = False
+
+if not st.session_state['authenticated']:
+    st.markdown("""
+    <div class="login-container">
+        <div class="login-title">CASHMAKER</div>
+        <div class="login-subtitle">전자책 작성 프로그램</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        password_input = st.text_input("비밀번호를 입력하세요", type="password", placeholder="비밀번호")
+        
+        if st.button("입장하기"):
+            if password_input == CORRECT_PASSWORD:
+                st.session_state['authenticated'] = True
+                st.rerun()
+            else:
+                st.error("비밀번호가 틀렸습니다")
+    
+    st.stop()
 
 # --- 세션 초기화 ---
 default_states = {
@@ -791,12 +846,12 @@ def generate_outline(topic, persona, pain_points):
 (총 6~7개 챕터)"""
     return ask_ai("베스트셀러 출판기획자", prompt, temperature=0.85)
 
-def generate_interview_questions(chapter_title, topic):
+def generate_interview_questions(subtopic_title, chapter_title, topic):
     prompt = f"""당신은 베스트셀러 작가의 고스트라이터입니다.
-'{topic}' 전자책의 '{chapter_title}' 챕터를 쓰기 위해 작가를 인터뷰합니다.
+'{topic}' 전자책의 '{chapter_title}' 챕터 중 '{subtopic_title}' 소제목 부분을 쓰기 위해 작가를 인터뷰합니다.
 
 [인터뷰 목적]
-작가의 진짜 경험과 통찰을 끌어내서, 독자가 "와, 이건 진짜 경험한 사람만 알 수 있는 거다"라고 느끼게 만들 콘텐츠를 확보하는 것.
+'{subtopic_title}'에 대한 작가의 진짜 경험과 통찰을 끌어내서, 독자가 "와, 이건 진짜 경험한 사람만 알 수 있는 거다"라고 느끼게 만들 콘텐츠를 확보하는 것.
 
 [좋은 질문의 특징]
 1. 구체적 상황을 묻는다: "언제, 어디서, 어떻게"
@@ -818,18 +873,16 @@ def generate_interview_questions(chapter_title, topic):
 - "독자들이 가장 많이 하는 실수는 뭔가요? 왜 그 실수를 하게 되나요?"
 
 [미션]
-'{chapter_title}' 챕터의 핵심 내용을 끌어낼 수 있는 인터뷰 질문 5개를 만들어주세요.
-이 질문에 답하면 자연스럽게 몰입감 있는 챕터 내용이 완성될 수 있어야 합니다.
+'{subtopic_title}' 소제목의 핵심 내용을 끌어낼 수 있는 인터뷰 질문 3개를 만들어주세요.
+이 질문에 답하면 자연스럽게 이 소제목에 대한 몰입감 있는 내용이 완성될 수 있어야 합니다.
 
 형식:
 Q1: [구체적이고 깊이 있는 질문]
 Q2: [구체적이고 깊이 있는 질문]
-Q3: [구체적이고 깊이 있는 질문]
-Q4: [구체적이고 깊이 있는 질문]
-Q5: [구체적이고 깊이 있는 질문]"""
+Q3: [구체적이고 깊이 있는 질문]"""
     return ask_ai("베스트셀러 고스트라이터", prompt, temperature=0.7)
 
-def generate_chapter_content(chapter_title, questions, answers, topic, persona):
+def generate_subtopic_content(subtopic_title, chapter_title, questions, answers, topic, persona):
     qa_pairs = ""
     for i, (q, a) in enumerate(zip(questions, answers), 1):
         if a.strip():
@@ -837,11 +890,11 @@ def generate_chapter_content(chapter_title, questions, answers, topic, persona):
     
     prompt = f"""당신은 자청(역행자), 엠제이 드마코(부의 추월차선), 김승호(돈의 속성)의 문체를 완벽히 체화한 고스트라이터입니다.
 당신이 쓴 글은 독자가 "이건 내 얘기잖아"라고 느끼며 단숨에 읽게 만듭니다.
-당신의 글은 첫 문장부터 독자의 목덜미를 잡고 마지막 문장까지 놓지 않습니다.
 
 [집필 정보]
 전자책 주제: {topic}
 챕터 제목: {chapter_title}
+소제목: {subtopic_title}
 타겟 독자: {persona}
 
 [작가 인터뷰 내용 - 이것을 바탕으로 글을 작성하세요]
@@ -849,63 +902,39 @@ def generate_chapter_content(chapter_title, questions, answers, topic, persona):
 
 [베스트셀러 글쓰기 원칙 - 자청/드마코 스타일]
 
-1. 첫 문장의 법칙 (Hook)
-   첫 문장에서 독자의 뒤통수를 쳐라. 첫 문장을 읽는 순간 다음 문장을 읽지 않을 수 없게 만들어라.
-   - 스토리 오프닝: "나는 그때 모든 것을 잃었다"
-   - 도발 오프닝: "당신이 알고 있는 것은 전부 틀렸다"
-   - 구체적 상황: "2019년 3월, 통장 잔고 47만원. 나는 바닥이었다"
-   - 질문 오프닝: "왜 열심히 하는 사람이 가난할까?"
-
-2. 문장 호흡 (리듬)
+1. 문장 호흡 (리듬)
    짧게. 끊어서. 리듬감 있게.
    - 한 문장 최대 20자
-   - 3문장 짧게 → 1문장 약간 길게 → 다시 짧게 (리듬 변화)
-   - 한 문단 최대 4~5줄
-   
-3. 스토리텔링 (Show, Don't Tell)
-   추상적 조언은 죽은 글이다. 모든 것을 구체적 장면으로 보여줘라.
+   - 3문장 짧게 → 1문장 약간 길게 → 다시 짧게
+
+2. 스토리텔링 (Show, Don't Tell)
+   추상적 조언은 죽은 글이다. 구체적 장면으로 보여줘라.
    - BAD: "열심히 노력했다" 
-   - GOOD: "새벽 4시에 일어나 2시간 동안 글을 썼다. 6개월 동안 하루도 빠지지 않았다."
-   - BAD: "많은 돈을 벌었다"
-   - GOOD: "첫 달 매출 47만원. 3개월 후 380만원. 1년 후 월 2000만원을 찍었다."
+   - GOOD: "새벽 4시에 일어나 2시간 동안 글을 썼다."
 
-4. 공감 → 문제 제기 → 해결책 구조
-   - 공감: "당신도 이런 경험 있지 않은가?" (독자의 아픔을 건드림)
-   - 문제 제기: "근데 진짜 문제는 따로 있다" (새로운 관점 제시)
-   - 해결책: "나는 이렇게 해결했다" (구체적 방법 제시)
-
-5. 자청 스타일 문체 특징
+3. 자청 스타일 문체 특징
    - "솔직히 말할게" - 친밀감
    - "이건 아무도 안 알려줘" - 비밀 공유
    - "나도 처음엔 몰랐어" - 동질감
-   - "근데 이게 핵심이야" - 강조
-   - "~하면 인생이 바뀐다" - 비전 제시
-
-6. 드마코 스타일 문체 특징
-   - 메타포 활용: "인생은 고속도로다. 넌 어느 차선에 있는가?"
-   - 직설적 도발: "네가 가난한 건 운이 나빠서가 아니다"
-   - 숫자 활용: "부자의 99%는 이것을 안다"
 
 [절대 금지 - AI 티 나는 표현]
-- "~입니다", "~하겠습니다" 반복 (딱딱함)
-- "중요합니다", "필요합니다", "해야 합니다" (교과서)
-- "첫째, 둘째, 셋째" 나열식 (보고서)
-- "결론적으로", "따라서", "그러므로" (논문)
-- "~에 대해 알아보겠습니다" (블로그)
-- "많은 분들이", "다양한" (모호함)
+- "~입니다", "~하겠습니다" 반복
+- "중요합니다", "필요합니다"
+- "첫째, 둘째, 셋째" 나열식
+- "따라서", "그러므로"
 
 [미션]
-위 인터뷰 내용을 바탕으로 3500~4500자 분량의 챕터를 작성하세요.
+위 인터뷰 내용을 바탕으로 '{subtopic_title}' 소제목에 대한 본문을 1000~1500자 분량으로 작성하세요.
 
 조건:
-1. 첫 문장에서 독자의 뒤통수를 쳐라
-2. 읽는 사람이 중간에 멈출 수 없을 정도로 몰입감 있게
-3. 추상적 조언 대신 구체적 장면과 숫자로
-4. 자청/드마코 스타일의 문체로
-5. AI가 쓴 티가 나면 실패
+1. 소제목 내용에 집중해서 깊이 있게 작성
+2. 읽는 사람이 몰입할 수 있게
+3. 구체적 장면과 숫자로
+4. AI가 쓴 티가 나면 실패
 
-글의 톤: 10년 선배가 술 한잔 하면서 후배에게 진심으로 조언해주는 느낌. 약간의 독설 + 따뜻한 진심."""
+글의 톤: 선배가 후배에게 진심으로 조언해주는 느낌."""
     return ask_ai("베스트셀러 고스트라이터", prompt, temperature=0.8)
+
 
 def refine_content(content, style="친근한"):
     style_guide = {
@@ -1350,9 +1379,36 @@ with tabs[2]:
             
             if st.button("저장하기", key="save_outline"):
                 st.session_state['outline'] = [ch for ch in edited_outline if ch.strip()]
+                
+                # 전체 목차에서 챕터별 소제목 파싱
+                full_outline = st.session_state.get('full_outline', '')
                 for ch in st.session_state['outline']:
                     if ch not in st.session_state['chapters']:
-                        st.session_state['chapters'][ch] = {'questions': [], 'answers': [], 'content': ''}
+                        # 소제목 추출
+                        subtopics = []
+                        ch_pattern = re.escape(ch.split(':')[-1].strip() if ':' in ch else ch)
+                        # 해당 챕터 다음의 - 로 시작하는 줄들을 소제목으로 추출
+                        lines = full_outline.split('\n')
+                        found_chapter = False
+                        for line in lines:
+                            if ch_pattern[:10] in line or (ch.split(':')[0] if ':' in ch else '') in line:
+                                found_chapter = True
+                                continue
+                            if found_chapter:
+                                if line.strip().startswith('##') or line.strip().startswith('챕터'):
+                                    break
+                                if line.strip().startswith('-'):
+                                    subtopic = line.strip().lstrip('-').strip()
+                                    if subtopic:
+                                        subtopics.append(subtopic)
+                        
+                        if not subtopics:
+                            subtopics = ['소제목 1', '소제목 2', '소제목 3']
+                        
+                        st.session_state['chapters'][ch] = {
+                            'subtopics': subtopics,
+                            'subtopic_data': {st: {'questions': [], 'answers': [], 'content': ''} for st in subtopics}
+                        }
                 st.success("저장됨")
         else:
             st.info("먼저 목차를 생성하세요.")
@@ -1364,85 +1420,177 @@ with tabs[3]:
     if not st.session_state['outline']:
         st.warning("먼저 목차를 생성해주세요.")
     else:
+        # 챕터 선택
         selected_chapter = st.selectbox(
             "챕터 선택",
             st.session_state['outline'],
             key="chapter_select"
         )
         
+        # 챕터 데이터 초기화
         if selected_chapter not in st.session_state['chapters']:
-            st.session_state['chapters'][selected_chapter] = {'questions': [], 'answers': [], 'content': ''}
+            st.session_state['chapters'][selected_chapter] = {
+                'subtopics': ['소제목 1', '소제목 2', '소제목 3'],
+                'subtopic_data': {}
+            }
         
         chapter_data = st.session_state['chapters'][selected_chapter]
         
-        col1, col2 = st.columns([1, 1])
+        # 소제목 리스트 확인 및 초기화
+        if 'subtopics' not in chapter_data:
+            chapter_data['subtopics'] = ['소제목 1', '소제목 2', '소제목 3']
+        if 'subtopic_data' not in chapter_data:
+            chapter_data['subtopic_data'] = {}
         
-        with col1:
-            st.markdown('<p class="section-label">Step 01</p>', unsafe_allow_html=True)
-            st.markdown("### 인터뷰")
+        for st_name in chapter_data['subtopics']:
+            if st_name not in chapter_data['subtopic_data']:
+                chapter_data['subtopic_data'][st_name] = {'questions': [], 'answers': [], 'content': ''}
+        
+        st.markdown("---")
+        
+        # 소제목 편집 섹션
+        st.markdown('<p class="section-label">소제목 편집</p>', unsafe_allow_html=True)
+        
+        col_edit1, col_edit2 = st.columns([3, 1])
+        with col_edit1:
+            edited_subtopics = []
+            for i, st_name in enumerate(chapter_data['subtopics']):
+                edited_st = st.text_input(f"소제목 {i+1}", value=st_name, key=f"subtopic_edit_{selected_chapter}_{i}")
+                edited_subtopics.append(edited_st)
+        
+        with col_edit2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("소제목 저장", key="save_subtopics"):
+                # 기존 데이터 유지하면서 소제목 이름 업데이트
+                old_subtopics = chapter_data['subtopics']
+                new_subtopic_data = {}
+                for i, new_name in enumerate(edited_subtopics):
+                    if new_name.strip():
+                        old_name = old_subtopics[i] if i < len(old_subtopics) else new_name
+                        if old_name in chapter_data['subtopic_data']:
+                            new_subtopic_data[new_name] = chapter_data['subtopic_data'][old_name]
+                        else:
+                            new_subtopic_data[new_name] = {'questions': [], 'answers': [], 'content': ''}
+                
+                chapter_data['subtopics'] = [s for s in edited_subtopics if s.strip()]
+                chapter_data['subtopic_data'] = new_subtopic_data
+                st.success("저장됨")
+                st.rerun()
+        
+        st.markdown("---")
+        
+        # 소제목 선택
+        selected_subtopic = st.selectbox(
+            "작성할 소제목 선택",
+            chapter_data['subtopics'],
+            key="subtopic_select"
+        )
+        
+        if selected_subtopic:
+            if selected_subtopic not in chapter_data['subtopic_data']:
+                chapter_data['subtopic_data'][selected_subtopic] = {'questions': [], 'answers': [], 'content': ''}
             
-            if st.button("질문 생성하기", key="gen_questions"):
-                with st.spinner("생성 중..."):
-                    questions_text = generate_interview_questions(selected_chapter, st.session_state['topic'])
-                    questions = re.findall(r'Q\d+:\s*(.+)', questions_text)
-                    if not questions:
-                        questions = [q.strip() for q in questions_text.split('\n') if q.strip() and '?' in q][:5]
-                    chapter_data['questions'] = questions
-                    chapter_data['answers'] = [''] * len(questions)
+            subtopic_data = chapter_data['subtopic_data'][selected_subtopic]
             
-            if chapter_data['questions']:
-                for i, q in enumerate(chapter_data['questions']):
-                    st.markdown(f"**Q{i+1}.** {q}")
-                    chapter_data['answers'][i] = st.text_area(
-                        f"A{i+1}",
-                        value=chapter_data['answers'][i] if i < len(chapter_data['answers']) else '',
-                        key=f"answer_{selected_chapter}_{i}",
-                        height=80,
+            col1, col2 = st.columns([1, 1])
+            
+            with col1:
+                st.markdown('<p class="section-label">Step 01</p>', unsafe_allow_html=True)
+                st.markdown(f"### 인터뷰: {selected_subtopic}")
+                
+                if st.button("질문 생성하기", key="gen_questions"):
+                    with st.spinner("생성 중..."):
+                        questions_text = generate_interview_questions(
+                            selected_subtopic, 
+                            selected_chapter, 
+                            st.session_state['topic']
+                        )
+                        questions = re.findall(r'Q\d+:\s*(.+)', questions_text)
+                        if not questions:
+                            questions = [q.strip() for q in questions_text.split('\n') if q.strip() and '?' in q][:3]
+                        subtopic_data['questions'] = questions
+                        subtopic_data['answers'] = [''] * len(questions)
+                
+                if subtopic_data['questions']:
+                    for i, q in enumerate(subtopic_data['questions']):
+                        st.markdown(f"**Q{i+1}.** {q}")
+                        if i >= len(subtopic_data['answers']):
+                            subtopic_data['answers'].append('')
+                        subtopic_data['answers'][i] = st.text_area(
+                            f"A{i+1}",
+                            value=subtopic_data['answers'][i],
+                            key=f"answer_{selected_chapter}_{selected_subtopic}_{i}",
+                            height=80,
+                            label_visibility="collapsed"
+                        )
+            
+            with col2:
+                st.markdown('<p class="section-label">Step 02</p>', unsafe_allow_html=True)
+                st.markdown(f"### 본문: {selected_subtopic}")
+                
+                if st.button("본문 생성하기", key="gen_content"):
+                    if not subtopic_data['questions'] or not any(subtopic_data['answers']):
+                        st.error("질문과 답변을 먼저 작성해주세요.")
+                    else:
+                        with st.spinner("작성 중... (30초~1분)"):
+                            content = generate_subtopic_content(
+                                selected_subtopic,
+                                selected_chapter,
+                                subtopic_data['questions'],
+                                subtopic_data['answers'],
+                                st.session_state['topic'],
+                                st.session_state['target_persona']
+                            )
+                            subtopic_data['content'] = content
+                
+                if subtopic_data['content']:
+                    edited_content = st.text_area(
+                        "편집",
+                        value=subtopic_data['content'],
+                        height=400,
+                        key=f"content_{selected_chapter}_{selected_subtopic}",
                         label_visibility="collapsed"
                     )
+                    subtopic_data['content'] = edited_content
+                    st.caption(f"{len(edited_content):,}자")
         
-        with col2:
-            st.markdown('<p class="section-label">Step 02</p>', unsafe_allow_html=True)
-            st.markdown("### 본문")
-            
-            if st.button("본문 생성하기", key="gen_content"):
-                if not chapter_data['questions'] or not any(chapter_data['answers']):
-                    st.error("질문과 답변을 먼저 작성해주세요.")
-                else:
-                    with st.spinner("작성 중... (1~2분)"):
-                        content = generate_chapter_content(
-                            selected_chapter,
-                            chapter_data['questions'],
-                            chapter_data['answers'],
-                            st.session_state['topic'],
-                            st.session_state['target_persona']
-                        )
-                        chapter_data['content'] = content
-            
-            if chapter_data['content']:
-                edited_content = st.text_area(
-                    "편집",
-                    value=chapter_data['content'],
-                    height=500,
-                    key=f"content_{selected_chapter}",
-                    label_visibility="collapsed"
-                )
-                chapter_data['content'] = edited_content
-                st.caption(f"{len(edited_content):,}자")
+        st.markdown("---")
+        
+        # 챕터 전체 진행 상황
+        st.markdown("### 챕터 진행 상황")
+        for st_name in chapter_data['subtopics']:
+            st_data = chapter_data['subtopic_data'].get(st_name, {})
+            has_content = bool(st_data.get('content'))
+            status = "✅" if has_content else "⬜"
+            char_count = len(st_data.get('content', ''))
+            st.markdown(f"{status} **{st_name}** - {char_count:,}자")
 
 # === TAB 5: 문체 다듬기 ===
 with tabs[4]:
     st.markdown("## 문체 다듬기")
     
-    if not st.session_state['chapters'] or not any(ch.get('content') for ch in st.session_state['chapters'].values()):
+    # 작성된 소제목 찾기
+    completed_items = []
+    for ch in st.session_state['outline']:
+        if ch in st.session_state['chapters']:
+            ch_data = st.session_state['chapters'][ch]
+            if 'subtopic_data' in ch_data:
+                for st_name, st_data in ch_data['subtopic_data'].items():
+                    if st_data.get('content'):
+                        completed_items.append((ch, st_name))
+    
+    if not completed_items:
         st.warning("먼저 본문을 작성해주세요.")
     else:
-        completed_chapters = [ch for ch in st.session_state['outline'] 
-                           if ch in st.session_state['chapters'] 
-                           and st.session_state['chapters'][ch].get('content')]
+        # 챕터-소제목 선택
+        chapter_options = list(set([item[0] for item in completed_items]))
+        selected_ch = st.selectbox("챕터", chapter_options, key="refine_chapter_select")
         
-        if completed_chapters:
-            selected = st.selectbox("챕터", completed_chapters, key="refine_select")
+        subtopic_options = [item[1] for item in completed_items if item[0] == selected_ch]
+        selected_st = st.selectbox("소제목", subtopic_options, key="refine_subtopic_select")
+        
+        if selected_ch and selected_st:
+            st_data = st.session_state['chapters'][selected_ch]['subtopic_data'][selected_st]
             
             col1, col2 = st.columns([1, 1])
             
@@ -1458,23 +1606,20 @@ with tabs[4]:
                 
                 if st.button("변환하기", key="refine_btn"):
                     with st.spinner("변환 중..."):
-                        refined = refine_content(
-                            st.session_state['chapters'][selected]['content'],
-                            style
-                        )
-                        st.session_state['chapters'][selected]['refined'] = refined
+                        refined = refine_content(st_data['content'], style)
+                        st_data['refined'] = refined
                 
-                if st.session_state['chapters'][selected].get('refined'):
+                if st_data.get('refined'):
                     refined_edit = st.text_area(
                         "결과",
-                        value=st.session_state['chapters'][selected]['refined'],
+                        value=st_data['refined'],
                         height=400,
                         key="refined_content",
                         label_visibility="collapsed"
                     )
                     
                     if st.button("적용하기", key="apply_refined"):
-                        st.session_state['chapters'][selected]['content'] = refined_edit
+                        st_data['content'] = refined_edit
                         st.success("적용됨")
             
             with col2:
@@ -1483,7 +1628,7 @@ with tabs[4]:
                 
                 if st.button("검사하기", key="quality_btn"):
                     with st.spinner("분석 중..."):
-                        quality = check_quality(st.session_state['chapters'][selected]['content'])
+                        quality = check_quality(st_data['content'])
                         st.markdown(f"""
                         <div class="info-card">
                             {quality.replace(chr(10), '<br>')}
@@ -1506,22 +1651,49 @@ with tabs[5]:
 ---
 
 """
+        total_chars = 0
+        completed_subtopics = 0
+        total_subtopics = 0
+        
         for chapter in st.session_state['outline']:
-            if chapter in st.session_state['chapters'] and st.session_state['chapters'][chapter].get('content'):
-                full_book += f"\n\n# {chapter}\n\n"
-                full_book += st.session_state['chapters'][chapter]['content']
+            if chapter in st.session_state['chapters']:
+                ch_data = st.session_state['chapters'][chapter]
+                
+                # 소제목별 콘텐츠 합치기
+                if 'subtopic_data' in ch_data:
+                    chapter_has_content = False
+                    chapter_content = ""
+                    
+                    for st_name in ch_data.get('subtopics', []):
+                        total_subtopics += 1
+                        st_data = ch_data['subtopic_data'].get(st_name, {})
+                        if st_data.get('content'):
+                            chapter_has_content = True
+                            completed_subtopics += 1
+                            chapter_content += f"\n\n### {st_name}\n\n"
+                            chapter_content += st_data['content']
+                    
+                    if chapter_has_content:
+                        full_book += f"\n\n# {chapter}\n"
+                        full_book += chapter_content
+                        total_chars += len(chapter_content)
+                
+                # 기존 구조 호환 (content가 직접 있는 경우)
+                elif ch_data.get('content'):
+                    full_book += f"\n\n# {chapter}\n\n"
+                    full_book += ch_data['content']
+                    total_chars += len(ch_data['content'])
         
         st.text_area("원고", value=full_book, height=400, key="full_book", label_visibility="collapsed")
         
         total_chars = len(full_book)
-        completed = sum(1 for ch in st.session_state['chapters'].values() if ch.get('content'))
-        total = len(st.session_state['outline']) if st.session_state['outline'] else 1
+        total_chapters = len(st.session_state['outline']) if st.session_state['outline'] else 1
         
         col_stat1, col_stat2, col_stat3 = st.columns(3)
         with col_stat1:
             st.metric("글자수", f"{total_chars:,}")
         with col_stat2:
-            st.metric("챕터", f"{completed}/{total}")
+            st.metric("소제목", f"{completed_subtopics}/{total_subtopics}")
         with col_stat3:
             st.metric("페이지", f"~{total_chars//1500}")
         
@@ -1546,6 +1718,7 @@ with tabs[5]:
         body {{ font-family: 'Pretendard', sans-serif; max-width: 720px; margin: 0 auto; padding: 60px 20px; line-height: 1.8; color: #222; }}
         h1 {{ font-size: 2rem; font-weight: 700; }}
         h2 {{ font-size: 1.5rem; margin-top: 50px; }}
+        h3 {{ font-size: 1.2rem; margin-top: 30px; color: #444; }}
     </style>
 </head>
 <body>
