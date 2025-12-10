@@ -805,6 +805,44 @@ def generate_outline(topic, persona, pain_points):
 (6~7개 챕터까지)"""
     return ask_ai("출판기획자", prompt, temperature=0.85)
 
+def generate_subtopics(chapter_title, topic, persona):
+    prompt = f"""주제: {topic}
+챕터: {chapter_title}
+타겟: {persona}
+
+이 챕터의 소제목 3개를 만들어주세요.
+
+[소제목 규칙]
+소제목만 봐도 "이건 뭐지?" 하고 읽고 싶어야 합니다.
+
+나쁜 예시 (절대 금지):
+- "기본 개념 이해하기"
+- "실전 적용 방법"
+- "핵심 정리"
+- "~의 중요성"
+- "~란 무엇인가"
+
+좋은 예시:
+- "그날 통장 잔고 47만원"
+- "새벽 4시, 첫 수익 알림이 울렸다"
+- "모두가 틀렸다고 했다"
+- "3개월 후 월급을 넘어섰다"
+- "아무도 알려주지 않는 진짜 비밀"
+- "나는 왜 매번 실패했을까"
+- "그 한마디가 모든 걸 바꿨다"
+
+[규칙]
+1. 구체적 숫자 포함 (날짜, 금액, 기간)
+2. 스토리/장면이 느껴지게
+3. 호기심 자극 (뒷이야기가 궁금하게)
+4. 감정을 건드리게
+
+출력 형식 (이것만 출력):
+1. [소제목]
+2. [소제목]
+3. [소제목]"""
+    return ask_ai("베스트셀러 작가", prompt, temperature=0.9)
+
 def generate_interview_questions(subtopic_title, chapter_title, topic):
     prompt = f"""당신은 베스트셀러 작가의 고스트라이터입니다.
 '{topic}' 전자책의 '{chapter_title}' 챕터 중 '{subtopic_title}' 소제목 부분을 쓰기 위해 작가를 인터뷰합니다.
@@ -1409,6 +1447,31 @@ with tabs[3]:
         
         # 소제목 편집 섹션
         st.markdown('<p class="section-label">소제목 편집</p>', unsafe_allow_html=True)
+        
+        # AI 소제목 생성 버튼
+        if st.button("✨ AI 소제목 생성", key="gen_subtopics"):
+            with st.spinner("베스트셀러급 소제목 생성 중..."):
+                subtopics_text = generate_subtopics(
+                    selected_chapter,
+                    st.session_state['topic'],
+                    st.session_state['target_persona']
+                )
+                # 파싱
+                new_subtopics = []
+                for line in subtopics_text.split('\n'):
+                    line = line.strip()
+                    if line and (line[0].isdigit() or line.startswith('-')):
+                        # "1. 소제목" 또는 "- 소제목" 형식 처리
+                        cleaned = re.sub(r'^[\d\.\-\s]+', '', line).strip()
+                        if cleaned:
+                            new_subtopics.append(cleaned)
+                
+                if new_subtopics:
+                    # 기존 데이터 초기화하고 새 소제목 적용
+                    chapter_data['subtopics'] = new_subtopics[:3]
+                    chapter_data['subtopic_data'] = {st: {'questions': [], 'answers': [], 'content': ''} for st in new_subtopics[:3]}
+                    st.success("소제목 생성 완료!")
+                    st.rerun()
         
         col_edit1, col_edit2 = st.columns([3, 1])
         with col_edit1:
