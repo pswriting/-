@@ -2,6 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 import re
 import json
+import io
 from datetime import datetime
 
 # ==========================================
@@ -1909,12 +1910,28 @@ with tabs[5]:
         st.markdown('<p class="section-label">Preview</p>', unsafe_allow_html=True)
         st.markdown("### 전자책")
         
-        full_book = f"""# {st.session_state.get('book_title', '제목 없음')}
-## {st.session_state.get('subtitle', '')}
-
----
-
-"""
+        # 데이터 수집
+        book_title = st.session_state.get('book_title', '').strip()
+        subtitle = st.session_state.get('subtitle', '').strip()
+        
+        # 순수 텍스트 버전 (TXT용)
+        full_book_txt = ""
+        if book_title:
+            full_book_txt += f"{book_title}\n"
+        if subtitle:
+            full_book_txt += f"{subtitle}\n"
+        if book_title or subtitle:
+            full_book_txt += "\n" + "="*50 + "\n\n"
+        
+        # HTML 버전
+        full_book_html = ""
+        if book_title:
+            full_book_html += f'<h1 style="font-size: {title_size}; font-weight: 700; color: #111; margin-bottom: 10px;">{book_title}</h1>\n'
+        if subtitle:
+            full_book_html += f'<p style="font-size: 18px; color: #666; margin-bottom: 40px;">{subtitle}</p>\n'
+        if book_title or subtitle:
+            full_book_html += '<hr style="border: none; border-top: 2px solid #eee; margin: 40px 0;">\n'
+        
         total_chars = 0
         completed_subtopics = 0
         total_subtopics = 0
@@ -1926,7 +1943,8 @@ with tabs[5]:
                 # 소제목별 콘텐츠 합치기
                 if 'subtopic_data' in ch_data:
                     chapter_has_content = False
-                    chapter_content = ""
+                    chapter_content_txt = ""
+                    chapter_content_html = ""
                     
                     for st_name in ch_data.get('subtopics', []):
                         total_subtopics += 1
@@ -1934,23 +1952,42 @@ with tabs[5]:
                         if st_data.get('content'):
                             chapter_has_content = True
                             completed_subtopics += 1
-                            chapter_content += f"\n\n### {st_name}\n\n"
-                            chapter_content += st_data['content']
+                            # TXT 버전
+                            chapter_content_txt += f"\n\n■ {st_name}\n\n"
+                            chapter_content_txt += st_data['content']
+                            # HTML 버전
+                            chapter_content_html += f'<h3 style="font-size: {subtopic_size}; font-weight: 700; color: #333; margin-top: 40px; margin-bottom: 15px;">{st_name}</h3>\n'
+                            # 본문을 문단별로 p 태그 적용
+                            paragraphs = st_data['content'].split('\n\n')
+                            for para in paragraphs:
+                                para = para.strip()
+                                if para:
+                                    chapter_content_html += f'<p style="font-size: {font_size}; line-height: {line_height}; color: {text_color}; margin-bottom: 1.2em; text-align: justify;">{para}</p>\n'
                     
                     if chapter_has_content:
-                        full_book += f"\n\n# {chapter}\n"
-                        full_book += chapter_content
-                        total_chars += len(chapter_content)
+                        # TXT 버전
+                        full_book_txt += f"\n\n{'='*50}\n{chapter}\n{'='*50}\n"
+                        full_book_txt += chapter_content_txt
+                        # HTML 버전
+                        full_book_html += f'<h2 style="font-size: {chapter_size}; font-weight: 700; color: #222; margin-top: 60px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">{chapter}</h2>\n'
+                        full_book_html += chapter_content_html
+                        total_chars += len(chapter_content_txt)
                 
                 # 기존 구조 호환 (content가 직접 있는 경우)
                 elif ch_data.get('content'):
-                    full_book += f"\n\n# {chapter}\n\n"
-                    full_book += ch_data['content']
+                    full_book_txt += f"\n\n{'='*50}\n{chapter}\n{'='*50}\n\n"
+                    full_book_txt += ch_data['content']
+                    full_book_html += f'<h2 style="font-size: {chapter_size}; font-weight: 700; color: #222; margin-top: 60px; margin-bottom: 20px;">{chapter}</h2>\n'
+                    paragraphs = ch_data['content'].split('\n\n')
+                    for para in paragraphs:
+                        para = para.strip()
+                        if para:
+                            full_book_html += f'<p style="font-size: {font_size}; line-height: {line_height}; color: {text_color}; margin-bottom: 1.2em;">{para}</p>\n'
                     total_chars += len(ch_data['content'])
         
-        st.text_area("원고", value=full_book, height=400, key="full_book", label_visibility="collapsed")
+        st.text_area("원고", value=full_book_txt, height=400, key="full_book", label_visibility="collapsed")
         
-        total_chars = len(full_book)
+        total_chars = len(full_book_txt)
         total_chapters = len(st.session_state['outline']) if st.session_state['outline'] else 1
         
         col_stat1, col_stat2, col_stat3 = st.columns(3)
@@ -1968,7 +2005,7 @@ with tabs[5]:
 <html>
 <head>
     <meta charset="utf-8">
-    <title>{st.session_state.get('book_title', '전자책')}</title>
+    <title>{book_title or '전자책'}</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Gothic+A1:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Nanum+Myeongjo:wght@400;700&display=swap" rel="stylesheet">
     <style>
         @font-face {{
@@ -2001,84 +2038,175 @@ with tabs[5]:
             max-width: {max_width};
             margin: 0 auto;
             padding: 60px 20px;
-            line-height: {line_height};
-            color: {text_color};
-            font-size: {font_size};
             word-break: keep-all;
             font-weight: 500;
-        }}
-        h1 {{
-            font-size: {title_size};
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: #111;
-        }}
-        h2 {{
-            font-size: {chapter_size};
-            font-weight: 700;
-            margin-top: 60px;
-            margin-bottom: 20px;
-            color: #222;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
-        }}
-        h3 {{
-            font-size: {subtopic_size};
-            font-weight: 700;
-            margin-top: 40px;
-            margin-bottom: 15px;
-            color: #333;
-        }}
-        p {{
-            margin-bottom: 1.2em;
-            text-align: justify;
-        }}
-        hr {{
-            border: none;
-            border-top: 1px solid #ddd;
-            margin: 40px 0;
         }}
     </style>
 </head>
 <body>
-{full_book.replace(chr(10), '<br>')}
+{full_book_html}
 </body>
 </html>"""
         
-        col_dl1, col_dl2, col_dl3 = st.columns(3)
+        # 워드 파일 생성 함수
+        def create_docx():
+            try:
+                from docx import Document
+                from docx.shared import Pt, Inches
+                from docx.enum.text import WD_ALIGN_PARAGRAPH
+                
+                doc = Document()
+                
+                # 제목
+                if book_title:
+                    title_para = doc.add_paragraph()
+                    title_run = title_para.add_run(book_title)
+                    title_run.font.size = Pt(28)
+                    title_run.font.bold = True
+                    title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                
+                # 부제
+                if subtitle:
+                    sub_para = doc.add_paragraph()
+                    sub_run = sub_para.add_run(subtitle)
+                    sub_run.font.size = Pt(14)
+                    sub_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                
+                if book_title or subtitle:
+                    doc.add_paragraph()  # 빈 줄
+                
+                # 본문
+                for chapter in st.session_state['outline']:
+                    if chapter in st.session_state['chapters']:
+                        ch_data = st.session_state['chapters'][chapter]
+                        
+                        if 'subtopic_data' in ch_data:
+                            chapter_has_content = False
+                            for st_name in ch_data.get('subtopics', []):
+                                st_data = ch_data['subtopic_data'].get(st_name, {})
+                                if st_data.get('content'):
+                                    chapter_has_content = True
+                                    break
+                            
+                            if chapter_has_content:
+                                # 챕터 제목
+                                ch_para = doc.add_paragraph()
+                                ch_run = ch_para.add_run(chapter)
+                                ch_run.font.size = Pt(20)
+                                ch_run.font.bold = True
+                                
+                                for st_name in ch_data.get('subtopics', []):
+                                    st_data = ch_data['subtopic_data'].get(st_name, {})
+                                    if st_data.get('content'):
+                                        # 소제목
+                                        st_para = doc.add_paragraph()
+                                        st_run = st_para.add_run(st_name)
+                                        st_run.font.size = Pt(14)
+                                        st_run.font.bold = True
+                                        
+                                        # 본문
+                                        paragraphs = st_data['content'].split('\n\n')
+                                        for para in paragraphs:
+                                            para = para.strip()
+                                            if para:
+                                                p = doc.add_paragraph()
+                                                run = p.add_run(para)
+                                                run.font.size = Pt(11)
+                
+                # 파일로 저장
+                buffer = io.BytesIO()
+                doc.save(buffer)
+                buffer.seek(0)
+                return buffer.getvalue()
+            except ImportError:
+                return None
+        
+        # 다운로드 버튼들
+        col_dl1, col_dl2 = st.columns(2)
         with col_dl1:
             st.download_button(
-                "TXT 다운로드",
-                full_book,
-                file_name=f"{st.session_state.get('book_title', 'ebook')}_{datetime.now().strftime('%Y%m%d')}.txt",
-                mime="text/plain"
+                "📄 TXT 다운로드",
+                full_book_txt,
+                file_name=f"{book_title or 'ebook'}_{datetime.now().strftime('%Y%m%d')}.txt",
+                mime="text/plain",
+                use_container_width=True
             )
         
         with col_dl2:
             st.download_button(
-                "HTML 다운로드",
+                "🌐 HTML 다운로드",
                 html_content,
-                file_name=f"{st.session_state.get('book_title', 'ebook')}_{datetime.now().strftime('%Y%m%d')}.html",
-                mime="text/html"
+                file_name=f"{book_title or 'ebook'}_{datetime.now().strftime('%Y%m%d')}.html",
+                mime="text/html",
+                use_container_width=True
             )
         
+        col_dl3, col_dl4 = st.columns(2)
         with col_dl3:
-            if st.button("미리보기", key="preview_btn"):
-                st.session_state['show_preview'] = True
+            # 워드 파일 다운로드
+            docx_data = create_docx()
+            if docx_data:
+                st.download_button(
+                    "📘 워드(DOCX) 다운로드",
+                    docx_data,
+                    file_name=f"{book_title or 'ebook'}_{datetime.now().strftime('%Y%m%d')}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True
+                )
+            else:
+                st.info("워드 파일: python-docx 필요")
+        
+        with col_dl4:
+            # 한글 파일은 RTF로 대체 (hwp는 라이브러리 제한)
+            rtf_content = f"""{{\\rtf1\\ansi\\deff0
+{{\\fonttbl{{\\f0 맑은 고딕;}}}}
+\\f0\\fs24
+{book_title}\\par
+{subtitle}\\par
+\\par
+"""
+            for chapter in st.session_state['outline']:
+                if chapter in st.session_state['chapters']:
+                    ch_data = st.session_state['chapters'][chapter]
+                    if 'subtopic_data' in ch_data:
+                        chapter_has_content = any(ch_data['subtopic_data'].get(st_name, {}).get('content') for st_name in ch_data.get('subtopics', []))
+                        if chapter_has_content:
+                            rtf_content += f"\\par\\b {chapter}\\b0\\par\\par"
+                            for st_name in ch_data.get('subtopics', []):
+                                st_data = ch_data['subtopic_data'].get(st_name, {})
+                                if st_data.get('content'):
+                                    rtf_content += f"\\b {st_name}\\b0\\par"
+                                    content = st_data['content'].replace('\n', '\\par ')
+                                    rtf_content += f"{content}\\par\\par"
+            rtf_content += "}"
+            
+            st.download_button(
+                "📗 RTF 다운로드 (한글호환)",
+                rtf_content,
+                file_name=f"{book_title or 'ebook'}_{datetime.now().strftime('%Y%m%d')}.rtf",
+                mime="application/rtf",
+                use_container_width=True
+            )
+        
+        st.caption("💡 RTF 파일은 한글, 워드, 리브레오피스 등에서 열 수 있습니다.")
+        
+        # 미리보기 버튼
+        st.markdown("---")
+        if st.button("👁️ 스타일 미리보기", key="preview_btn", use_container_width=True):
+            st.session_state['show_preview'] = True
         
         # HTML 미리보기
         if st.session_state.get('show_preview'):
-            st.markdown("---")
             st.markdown("### 스타일 미리보기")
             preview_sample = f"""
             <div style="font-family: '{font_family}', sans-serif; max-width: {max_width}; line-height: {line_height}; color: {text_color}; font-size: {font_size}; border: 1px solid #ddd; padding: 30px; border-radius: 8px; background: #fff;">
-                <h1 style="font-size: {title_size}; font-weight: 700; color: #111; margin-bottom: 5px;">{st.session_state.get('book_title', '전자책 제목')}</h1>
-                <p style="color: #666; font-size: 14px;">{st.session_state.get('subtitle', '부제목')}</p>
+                <h1 style="font-size: {title_size}; font-weight: 700; color: #111; margin-bottom: 5px;">{book_title or '전자책 제목'}</h1>
+                <p style="color: #666; font-size: 14px;">{subtitle or '부제목'}</p>
                 <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
                 <h2 style="font-size: {chapter_size}; font-weight: 700; color: #222;">챕터1: 왜 열심히 하는 사람이 가난할까</h2>
                 <h3 style="font-size: {subtopic_size}; font-weight: 700; color: #333;">그날 통장 잔고 47만원</h3>
-                <p>2019년 3월. 통장 잔고를 확인했다. 47만원. 월급날까지 2주. 나는 바닥이었다.</p>
-                <p>솔직히 말할게. 나도 처음엔 몰랐어. 열심히만 하면 되는 줄 알았거든. 새벽 6시에 일어나서 밤 11시까지 일했어. 주말도 없었어.</p>
+                <p style="font-size: {font_size}; line-height: {line_height};">2019년 3월. 통장 잔고를 확인했습니다. 47만원. 월급날까지 2주. 저는 바닥이었습니다.</p>
+                <p style="font-size: {font_size}; line-height: {line_height};">솔직히 말씀드리면, 저도 처음엔 몰랐습니다. 열심히만 하면 되는 줄 알았거든요. 새벽 6시에 일어나서 밤 11시까지 일했습니다. 주말도 없었습니다.</p>
             </div>
             """
             st.markdown(preview_sample, unsafe_allow_html=True)
