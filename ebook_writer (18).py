@@ -1,0 +1,1589 @@
+import streamlit as st
+import google.generativeai as genai
+import re
+import json
+from datetime import datetime
+
+# ==========================================
+# API 키는 사용자가 직접 입력
+# ==========================================
+
+# --- 페이지 설정 ---
+st.set_page_config(
+    page_title="전자책 작성 프로그램", 
+    layout="wide", 
+    page_icon="◆"
+)
+
+# --- 지구인사이트 스타일 CSS ---
+st.markdown("""
+<style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    
+    * { 
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; 
+    }
+    
+    /* 기본 요소 숨김 */
+    header {visibility: hidden;} 
+    .stDeployButton {display:none;} 
+    footer {visibility: hidden;}
+    #MainMenu {visibility: hidden;}
+    
+    /* 메인 배경 - 순수 화이트 */
+    .stApp {
+        background: #ffffff;
+    }
+    
+    /* 메인 영역 */
+    .main .block-container {
+        background: #ffffff;
+        padding: 2rem 3rem;
+        max-width: 1200px;
+    }
+    
+    /* 사이드바 */
+    [data-testid="stSidebar"] {
+        background: #ffffff;
+        border-right: 1px solid #eeeeee;
+    }
+    
+    [data-testid="stSidebar"] * {
+        color: #222222 !important;
+    }
+    
+    [data-testid="stSidebar"] .stProgress > div > div > div > div {
+        background: #222222;
+        border-radius: 10px;
+    }
+    
+    /* 모든 텍스트 - 진한 검정 */
+    .stMarkdown, .stText, p, span, label, .stMarkdown p {
+        color: #222222 !important;
+        line-height: 1.7;
+    }
+    
+    /* 제목 스타일링 */
+    h1 { 
+        color: #111111 !important; 
+        font-weight: 700 !important; 
+        font-size: 2rem !important;
+        letter-spacing: -0.5px;
+        margin-bottom: 1rem !important;
+    }
+    
+    h2 { 
+        color: #111111 !important; 
+        font-weight: 700 !important;
+        font-size: 1.4rem !important;
+        margin-top: 2rem !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    h3 { 
+        color: #222222 !important; 
+        font-weight: 600 !important;
+        font-size: 1.1rem !important;
+        margin-bottom: 0.8rem !important;
+    }
+    
+    /* 탭 스타일 - 미니멀 라인 */
+    .stTabs [data-baseweb="tab-list"] {
+        background: transparent;
+        gap: 0;
+        border-bottom: 2px solid #eeeeee;
+        padding: 0;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background: transparent;
+        color: #888888 !important;
+        border-radius: 0;
+        font-weight: 500;
+        padding: 16px 24px;
+        font-size: 15px;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: all 0.2s;
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #222222 !important;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: transparent !important;
+        color: #111111 !important;
+        font-weight: 700 !important;
+        border-bottom: 2px solid #111111 !important;
+    }
+    
+    /* 버튼 스타일 - 검정 배경 + 흰색 글씨 */
+    .stButton > button { 
+        width: 100%; 
+        border-radius: 30px; 
+        font-weight: 600; 
+        background: #111111 !important;
+        color: #ffffff !important;
+        border: none !important;
+        padding: 14px 32px;
+        font-size: 15px;
+        transition: all 0.2s;
+        box-shadow: none;
+    }
+    
+    .stButton > button:hover { 
+        background: #333333 !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: translateY(-1px);
+    }
+    
+    .stButton > button:active {
+        transform: translateY(0);
+    }
+    
+    /* 버튼 내부 텍스트 강제 흰색 */
+    .stButton > button p,
+    .stButton > button span,
+    .stButton > button div,
+    .stButton > button * {
+        color: #ffffff !important;
+    }
+    
+    /* 다운로드 버튼 */
+    .stDownloadButton > button {
+        background: #2d5a27 !important;
+        color: #ffffff !important;
+        border-radius: 30px;
+    }
+    
+    .stDownloadButton > button:hover {
+        background: #3d7a37 !important;
+    }
+    
+    .stDownloadButton > button p,
+    .stDownloadButton > button span,
+    .stDownloadButton > button * {
+        color: #ffffff !important;
+    }
+    
+    /* 입력 필드 */
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea {
+        background: #ffffff !important;
+        border: 1px solid #dddddd !important;
+        border-radius: 8px !important;
+        color: #222222 !important;
+        padding: 14px 16px !important;
+        font-size: 15px !important;
+    }
+    
+    .stTextInput > div > div > input:focus,
+    .stTextArea > div > div > textarea:focus {
+        border-color: #111111 !important;
+        box-shadow: none !important;
+    }
+    
+    .stTextInput > div > div > input::placeholder,
+    .stTextArea > div > div > textarea::placeholder {
+        color: #aaaaaa !important;
+    }
+    
+    /* 셀렉트박스 */
+    .stSelectbox > div > div {
+        background: #ffffff !important;
+        border: 1px solid #dddddd !important;
+        border-radius: 8px !important;
+    }
+    
+    .stSelectbox > div > div > div {
+        color: #222222 !important;
+    }
+    
+    /* 메트릭 */
+    [data-testid="stMetricValue"] {
+        color: #111111 !important;
+        font-size: 2rem !important;
+        font-weight: 700 !important;
+    }
+    
+    [data-testid="stMetricLabel"] {
+        color: #666666 !important;
+    }
+    
+    /* 알림 메시지 */
+    .stSuccess {
+        background: #f0f9f0 !important;
+        border: 1px solid #c8e6c9 !important;
+        border-radius: 8px !important;
+    }
+    .stSuccess p { color: #2e7d32 !important; }
+    
+    .stWarning {
+        background: #fff8e1 !important;
+        border: 1px solid #ffecb3 !important;
+        border-radius: 8px !important;
+    }
+    .stWarning p { color: #f57c00 !important; }
+    
+    .stError {
+        background: #ffebee !important;
+        border: 1px solid #ffcdd2 !important;
+        border-radius: 8px !important;
+    }
+    .stError p { color: #c62828 !important; }
+    
+    .stInfo {
+        background: #e3f2fd !important;
+        border: 1px solid #bbdefb !important;
+        border-radius: 8px !important;
+    }
+    .stInfo p { color: #1565c0 !important; }
+    
+    /* 구분선 */
+    hr {
+        border: none !important;
+        border-top: 1px solid #eeeeee !important;
+        margin: 2rem 0 !important;
+    }
+    
+    /* 프로그레스 바 */
+    .stProgress > div > div > div > div {
+        background: #222222;
+        border-radius: 10px;
+    }
+    
+    /* ===== 커스텀 컴포넌트 ===== */
+    
+    /* 히어로 섹션 */
+    .hero-section {
+        text-align: center;
+        padding: 60px 20px;
+        margin-bottom: 40px;
+    }
+    
+    .hero-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #666666;
+        letter-spacing: 3px;
+        margin-bottom: 16px;
+        text-transform: uppercase;
+    }
+    
+    .hero-title {
+        font-size: 42px;
+        font-weight: 800;
+        color: #111111;
+        margin-bottom: 16px;
+        letter-spacing: -1px;
+        line-height: 1.2;
+    }
+    
+    .hero-subtitle {
+        font-size: 18px;
+        color: #666666;
+        font-weight: 400;
+    }
+    
+    /* 섹션 라벨 */
+    .section-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #888888;
+        letter-spacing: 2px;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+    }
+    
+    /* 점수 카드 */
+    .score-card {
+        background: #f8f8f8;
+        border-radius: 20px;
+        padding: 50px 40px;
+        text-align: center;
+    }
+    
+    .score-number {
+        font-size: 80px;
+        font-weight: 800;
+        color: #111111;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+    
+    .score-label {
+        color: #888888;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    /* 상태 배지 */
+    .status-badge {
+        display: inline-block;
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 13px;
+        margin-top: 20px;
+    }
+    
+    .status-excellent {
+        background: #111111;
+        color: #ffffff;
+    }
+    
+    .status-good {
+        background: #f0f0f0;
+        color: #333333;
+    }
+    
+    .status-warning {
+        background: #fff3e0;
+        color: #e65100;
+    }
+    
+    /* 정보 카드 */
+    .info-card {
+        background: #f8f8f8;
+        border-radius: 16px;
+        padding: 24px;
+        margin: 16px 0;
+    }
+    
+    .info-card-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: #888888;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+    }
+    
+    .info-card p {
+        color: #333333 !important;
+        font-size: 15px;
+        line-height: 1.8;
+        margin: 8px 0;
+    }
+    
+    /* 제목 카드 */
+    .title-card {
+        background: #ffffff;
+        border: 1px solid #eeeeee;
+        border-radius: 16px;
+        padding: 24px;
+        margin: 12px 0;
+        transition: all 0.2s;
+    }
+    
+    .title-card:hover {
+        border-color: #cccccc;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    
+    .title-card .card-number {
+        font-size: 12px;
+        font-weight: 600;
+        color: #aaaaaa;
+        margin-bottom: 8px;
+    }
+    
+    .title-card .main-title {
+        color: #111111;
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+    
+    .title-card .sub-title {
+        color: #666666;
+        font-size: 14px;
+        margin-bottom: 16px;
+    }
+    
+    .title-card .reason {
+        color: #444444;
+        font-size: 14px;
+        padding: 14px 16px;
+        background: #f8f8f8;
+        border-radius: 10px;
+        line-height: 1.6;
+    }
+    
+    /* 점수 아이템 */
+    .score-item {
+        background: #ffffff;
+        border: 1px solid #eeeeee;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin: 10px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .score-item-label {
+        color: #333333;
+        font-weight: 500;
+        font-size: 15px;
+    }
+    
+    .score-item-value {
+        color: #111111;
+        font-weight: 700;
+        font-size: 20px;
+    }
+    
+    .score-item-reason {
+        color: #666666;
+        font-size: 14px;
+        margin-top: 4px;
+        line-height: 1.5;
+    }
+    
+    /* 요약 박스 */
+    .summary-box {
+        background: #f8f8f8;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    
+    .summary-box p {
+        color: #333333 !important;
+        font-size: 15px;
+        line-height: 1.7;
+    }
+    
+    /* 푸터 */
+    .premium-footer {
+        text-align: center;
+        padding: 40px 20px;
+        margin-top: 60px;
+        border-top: 1px solid #eeeeee;
+    }
+    
+    .premium-footer-text {
+        color: #888888;
+        font-size: 14px;
+    }
+    
+    .premium-footer-author {
+        color: #222222;
+        font-weight: 600;
+    }
+    
+    /* 빈 상태 */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: #f8f8f8;
+        border-radius: 16px;
+    }
+    
+    .empty-state p {
+        color: #888888 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# --- 세션 초기화 ---
+default_states = {
+    'topic': '',
+    'target_persona': '',
+    'pain_points': '',
+    'one_line_concept': '',
+    'outline': [],
+    'chapters': {},
+    'current_step': 1,
+    'market_analysis': '',
+    'book_title': '',
+    'subtitle': '',
+    'topic_score': None,
+    'topic_verdict': None,
+    'score_details': None,
+    'generated_titles': None,
+}
+
+for key, value in default_states.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
+
+# --- Gemini 모델은 사이드바에서 설정됨 ---
+
+# --- 사이드바 ---
+with st.sidebar:
+    st.markdown("### Progress")
+    
+    progress_items = [
+        bool(st.session_state['topic']),
+        bool(st.session_state['target_persona']),
+        bool(st.session_state['outline']),
+        len(st.session_state['chapters']) > 0,
+        any(ch.get('content') for ch in st.session_state['chapters'].values()) if st.session_state['chapters'] else False
+    ]
+    progress = sum(progress_items) / len(progress_items) * 100
+    
+    st.progress(progress / 100)
+    st.caption(f"{progress:.0f}% 완료")
+    
+    st.markdown("---")
+    st.markdown("### Info")
+    if st.session_state['topic']:
+        st.caption(f"주제: {st.session_state['topic']}")
+    if st.session_state['book_title']:
+        st.caption(f"제목: {st.session_state['book_title']}")
+    if st.session_state['outline']:
+        st.caption(f"목차: {len(st.session_state['outline'])}개")
+    
+    completed_chapters = sum(1 for ch in st.session_state['chapters'].values() if ch.get('content'))
+    if completed_chapters:
+        st.caption(f"완성: {completed_chapters}개")
+    
+    st.markdown("---")
+    st.markdown("### API 설정")
+    
+    # API 키 입력
+    api_key_input = st.text_input(
+        "Gemini API 키",
+        type="password",
+        placeholder="AIza...",
+        help="Google AI Studio에서 발급받은 API 키를 입력하세요"
+    )
+    
+    # API 키 발급 안내
+    with st.expander("API 키 발급 방법 (무료)"):
+        st.markdown("""
+        **2분이면 끝!**
+        
+        1. [Google AI Studio](https://aistudio.google.com/apikey) 접속
+        2. Google 계정으로 로그인
+        3. **"API 키 만들기"** 클릭
+        4. 생성된 키 복사
+        5. 위 입력창에 붙여넣기
+        
+        ✅ 완전 무료  
+        ✅ 신용카드 불필요  
+        ✅ 분당 15회 요청 가능
+        """)
+    
+    # API 연결 상태 (간소화)
+    if not api_key_input:
+        st.caption("⚠️ API 키를 입력하세요")
+
+# --- AI 함수 ---
+def ask_ai(system_role, prompt, temperature=0.7):
+    if not api_key_input:
+        return "⚠️ API 키를 먼저 입력해주세요."
+    
+    try:
+        genai.configure(api_key=api_key_input)
+        ai_model = genai.GenerativeModel('models/gemini-2.0-flash')
+        generation_config = genai.types.GenerationConfig(temperature=temperature)
+        full_prompt = f"""당신은 {system_role}입니다.
+
+{prompt}
+
+한국어로 답변해주세요."""
+        response = ai_model.generate_content(full_prompt, generation_config=generation_config)
+        return response.text
+    except Exception as e:
+        return f"오류 발생: {str(e)}"
+
+def analyze_topic_score(topic):
+    prompt = f"""'{topic}' 주제의 전자책 적합도를 분석해주세요.
+
+다음 5가지 항목을 각각 0~100점으로 채점하고, 종합 점수와 판정을 내려주세요.
+
+채점 항목:
+1. 시장성 (수요가 있는가?)
+2. 수익성 (돈을 지불할 의향이 있는 주제인가?)
+3. 차별화 가능성 (경쟁에서 이길 수 있는가?)
+4. 작성 난이도 (전자책으로 만들기 쉬운가?)
+5. 지속성 (오래 팔릴 수 있는가?)
+
+반드시 아래 JSON 형식으로만 답변하세요. 다른 텍스트 없이 JSON만:
+{{
+    "market": {{"score": 85, "reason": "이유"}},
+    "profit": {{"score": 80, "reason": "이유"}},
+    "differentiation": {{"score": 75, "reason": "이유"}},
+    "difficulty": {{"score": 90, "reason": "이유"}},
+    "sustainability": {{"score": 70, "reason": "이유"}},
+    "total_score": 80,
+    "verdict": "적합" 또는 "보통" 또는 "부적합",
+    "summary": "종합 의견 2~3문장"
+}}"""
+    return ask_ai("전자책 시장 분석가", prompt, temperature=0.3)
+
+def generate_titles_advanced(topic, persona, pain_points):
+    prompt = f"""당신은 자청(역행자), 엠제이 드마코(부의 추월차선), 김승호(돈의 속성)급 베스트셀러 작가입니다.
+당신이 쓴 책들은 수십만 부가 팔렸고, 제목만으로 서점에서 손이 가게 만드는 마법을 부립니다.
+
+[분석 대상]
+주제: {topic}
+타겟: {persona}  
+타겟의 속마음: {pain_points}
+
+[베스트셀러 제목의 핵심 원칙]
+
+1. "읽는 순간 뒤통수를 맞은 느낌" - 기존 상식을 정면으로 뒤집어라
+   - "역행자" → 남들과 반대로 가야 성공한다는 역설
+   - "부의 추월차선" → 느린 차선(직장)에서 빠른 차선으로 갈아타라
+   
+2. "이건 나만 몰랐던 거 아냐?" - 소외감과 긴급함을 동시에 자극
+   - 읽지 않으면 뒤처질 것 같은 불안감
+   - 남들은 이미 알고 있다는 느낌
+   
+3. "구체적 숫자는 신뢰를 만든다" - 모호함 제거
+   - "나는 4시간만 일한다" - 구체적이라 믿음이 감
+   - "31개월 만에 10억" - 실제 숫자가 주는 힘
+   
+4. "짧을수록 강하다" - 7자 이내 메인 타이틀
+   - "역행자" (3자), "돈의 속성" (4자), "부의 추월차선" (5자)
+
+[실제 베스트셀러 제목 레퍼런스]
+- "역행자" - 한 단어로 정체성 규정 (자청)
+- "부의 추월차선" - 메타포로 욕망 자극
+- "돈, 뜨겁게 사랑하고 차갑게 다루어라" - 대비와 긴장감
+- "나는 4시간만 일한다" - 상식 파괴 + 구체적 숫자
+- "언스크립티드" - 낯선 단어로 호기심 유발
+- "망할 용기" - 역설적 표현으로 충격
+
+[절대 금지 - 이런 제목은 절대 쓰지 마세요]
+- "비법", "노하우", "성공", "시작하세요", "방법", "전략", "가이드"
+- "~하는 법", "~하기", "완벽한", "쉬운", "단계별"
+- 물음표로 끝나는 평범한 질문형
+- "데이터 기반", "체계적", "효율적" 같은 교과서 표현
+- "입문", "기초", "초보자를 위한"
+
+[미션]
+위 원칙으로 {topic} 주제의 전자책 제목 5개를 만들어주세요.
+평범하면 실패입니다. 서점에서 이 제목을 본 사람이 "뭐지?" 하고 멈춰서서 집어들게 만드세요.
+자청의 "역행자"처럼 단 한 단어로 사람의 정체성을 흔들 수 있다면 최고입니다.
+
+형식 (JSON만 출력):
+{{
+    "titles": [
+        {{
+            "title": "7자 이내 임팩트 제목",
+            "subtitle": "15자 이내 보조 설명",
+            "concept": "이 제목의 핵심 컨셉",
+            "why_works": "왜 사람들이 이 제목에 끌리는지 심리학적 이유"
+        }}
+    ]
+}}"""
+    return ask_ai("베스트셀러 작가", prompt, temperature=0.9)
+
+def generate_concept(topic, persona, pain_points):
+    prompt = f"""당신은 자청(역행자), 엠제이 드마코(부의 추월차선)급 베스트셀러 작가입니다.
+당신의 한 줄 컨셉은 독자의 세계관을 뒤흔들어 "이 책 안 읽으면 큰일 나겠다"는 느낌을 줍니다.
+
+주제: {topic}
+타겟: {persona}
+타겟의 진짜 속마음(숨기고 싶은 욕망과 두려움): {pain_points}
+
+[컨셉이란?]
+컨셉은 "이 책을 왜 사야 하는지"를 한 문장으로 설득하는 것입니다.
+좋은 컨셉은 타겟의 머릿속 상식을 정면으로 부정합니다.
+"엥? 이게 무슨 말이야?" → "어... 맞는 것 같기도?" → "이거 읽어야겠다"
+
+[나쁜 컨셉 예시 - 절대 이렇게 쓰지 마세요]
+- "주식 투자의 기초부터 차근차근 알려드립니다" (교과서)
+- "누구나 할 수 있는 쉬운 투자 방법" (믿음 안 감)
+- "체계적인 투자 시스템 구축하기" (졸림)
+- "성공하는 투자자들의 습관" (뻔함)
+
+[좋은 컨셉 예시 - 자청/드마코 스타일]
+- "월급쟁이는 절대 부자가 될 수 없다는 거짓말" (상식 파괴)
+- "나는 '감'으로 10억을 만들었다" (역설 + 구체적 숫자)
+- "열심히 일하는 사람이 가난한 진짜 이유" (도발)
+- "차트를 보는 순간 당신은 이미 졌다" (충격)
+- "운이 좋은 사람들의 불편한 비밀" (호기심)
+- "실패해야 성공한다는 말은 거짓말이다" (통념 부정)
+
+[컨셉 작성 공식]
+1. 역설형: "A하면 B한다고? 틀렸다. A하면 C한다"
+2. 상식파괴형: "당신이 알고 있는 X는 전부 틀렸다"
+3. 비밀폭로형: "아무도 알려주지 않는 진짜 Y"
+4. 소외자극형: "상위 1%만 알고 있는 Z"
+
+[미션]
+{topic}에 대해 타겟이 "엥? 이게 무슨 말이지?" 하고 멈칫한 뒤, 
+"이거 읽어야겠다"고 결심하게 만드는 한 줄 컨셉 5개를 만들어주세요.
+자청이 "역행자"에서 보여준 것처럼, 상식을 뒤집어야 합니다.
+
+형식:
+1. [한 줄 컨셉] 
+   → 이 컨셉이 작동하는 심리학적 이유 (왜 타겟이 이 말에 꽂히는가)
+
+2. [한 줄 컨셉]
+   → 이 컨셉이 작동하는 심리학적 이유
+   
+(5개까지)"""
+    return ask_ai("베스트셀러 작가", prompt, temperature=0.9)
+
+def generate_outline(topic, persona, pain_points):
+    prompt = f"""당신은 자청(역행자), 엠제이 드마코(부의 추월차선), 김승호(돈의 속성)의 목차를 설계한 출판 기획자입니다.
+당신이 만든 목차는 독자가 책을 펼치자마자 "이건 끝까지 읽어야 해"라고 결심하게 만듭니다.
+
+[기획 정보]
+주제: {topic}
+타겟 독자: {persona}
+타겟의 숨겨진 욕망과 두려움: {pain_points}
+
+[베스트셀러 목차의 비밀 - 자청/드마코가 사용한 기법]
+
+1. 챕터 제목은 "호기심 폭탄"이어야 한다
+   - 질문형: "왜 열심히 하는 사람이 가난할까?" (답이 궁금해서 읽음)
+   - 도발형: "당신이 알고 있는 것은 전부 틀렸다" (반박하고 싶어서 읽음)
+   - 비밀형: "아무도 말해주지 않는 진실" (소외되기 싫어서 읽음)
+   - 스토리형: "나는 그날 모든 것을 잃었다" (뒷이야기가 궁금해서 읽음)
+   - 숫자형: "31개월 만에 일어난 일" (구체적이라 믿음이 감)
+
+2. 감정선 설계 (독자를 롤러코스터 태우기)
+   - 챕터1: 공감 & 위로 → "나도 너처럼 바닥이었어"
+   - 챕터2: 문제 제기 → "근데 네가 모르는 게 있어"
+   - 챕터3: 충격 & 반전 → "사실 이게 진짜야" (여기서 세계관 붕괴)
+   - 챕터4: 깨달음 → "이걸 알면 달라져"
+   - 챕터5: 실전 → "이렇게 하면 돼"
+   - 챕터6: 마인드셋 → "근데 이게 제일 중요해"
+   - 챕터7: 비전 & 동기부여 → "이렇게 되면 인생이 바뀌어"
+
+3. "역행자" 목차 레퍼런스
+   - "운이 좋은 사람들의 비밀" → 비밀 공개형
+   - "자의식 해체" → 낯선 개념 제시형
+   - "정체성 만들기" → 명확한 해결책형
+
+4. "부의 추월차선" 목차 레퍼런스
+   - "부자들은 왜 로또를 사지 않을까" → 역설형 질문
+   - "인도에서 서행차선으로" → 메타포 활용
+   - "추월차선으로 갈아타는 법" → 행동 유도형
+
+[절대 금지 - 이런 목차는 절대 쓰지 마세요]
+- "1장: 기초 이해하기" (교과서)
+- "2장: 실전 적용하기" (밋밋함)
+- "~의 중요성", "~이란 무엇인가" (지루함)
+- "결론 및 정리" (학술 논문)
+- "입문자를 위한", "초보자 가이드" (매력 없음)
+
+[미션]
+{topic}에 대해 6~7개 챕터의 목차를 설계해주세요.
+
+조건:
+1. 각 챕터 제목만 봐도 "이건 뭐지?" 하고 궁금해야 함
+2. 챕터 순서대로 읽으면 감정선이 자연스럽게 흘러야 함
+3. 자청/드마코처럼 독자의 상식을 뒤집는 제목이 최소 2개 포함
+4. 소제목 3개는 챕터 내용을 구체적으로 힌트
+
+형식:
+## 챕터1: [호기심 유발 제목]
+- [소제목1: 구체적 내용 힌트]
+- [소제목2: 구체적 내용 힌트]
+- [소제목3: 구체적 내용 힌트]
+
+## 챕터2: [도발적/역설적 제목]
+- [소제목1]
+- [소제목2]
+- [소제목3]
+
+(총 6~7개 챕터)"""
+    return ask_ai("베스트셀러 출판기획자", prompt, temperature=0.85)
+
+def generate_interview_questions(chapter_title, topic):
+    prompt = f"""당신은 베스트셀러 작가의 고스트라이터입니다.
+'{topic}' 전자책의 '{chapter_title}' 챕터를 쓰기 위해 작가를 인터뷰합니다.
+
+[인터뷰 목적]
+작가의 진짜 경험과 통찰을 끌어내서, 독자가 "와, 이건 진짜 경험한 사람만 알 수 있는 거다"라고 느끼게 만들 콘텐츠를 확보하는 것.
+
+[좋은 질문의 특징]
+1. 구체적 상황을 묻는다: "언제, 어디서, 어떻게"
+2. 감정을 묻는다: "그때 기분이 어땠나요?"
+3. 실패를 묻는다: "처음에 뭘 잘못했나요?"
+4. 반전을 묻는다: "뭘 깨닫고 달라졌나요?"
+5. 디테일을 묻는다: "구체적으로 어떻게 했나요?"
+
+[나쁜 질문 예시 - 이런 질문은 피하세요]
+- "이것의 중요성에 대해 말씀해주세요" (추상적)
+- "팁이 있다면?" (뻔한 답변 유도)
+- "어떻게 생각하세요?" (의견만 나옴)
+
+[좋은 질문 예시]
+- "처음 이걸 시작했을 때 가장 크게 실패한 경험은 뭔가요? 그때 뭘 잘못 생각했던 건가요?"
+- "이걸 깨닫기 전과 후, 구체적으로 뭐가 달라졌나요? 숫자로 말해주실 수 있나요?"
+- "주변에서 반대했을 때 어떻게 대응했나요? 실제로 뭐라고 말했나요?"
+- "이 방법을 처음 시도한 날, 그 상황을 자세히 묘사해주실 수 있나요?"
+- "독자들이 가장 많이 하는 실수는 뭔가요? 왜 그 실수를 하게 되나요?"
+
+[미션]
+'{chapter_title}' 챕터의 핵심 내용을 끌어낼 수 있는 인터뷰 질문 5개를 만들어주세요.
+이 질문에 답하면 자연스럽게 몰입감 있는 챕터 내용이 완성될 수 있어야 합니다.
+
+형식:
+Q1: [구체적이고 깊이 있는 질문]
+Q2: [구체적이고 깊이 있는 질문]
+Q3: [구체적이고 깊이 있는 질문]
+Q4: [구체적이고 깊이 있는 질문]
+Q5: [구체적이고 깊이 있는 질문]"""
+    return ask_ai("베스트셀러 고스트라이터", prompt, temperature=0.7)
+
+def generate_chapter_content(chapter_title, questions, answers, topic, persona):
+    qa_pairs = ""
+    for i, (q, a) in enumerate(zip(questions, answers), 1):
+        if a.strip():
+            qa_pairs += f"\n질문{i}: {q}\n답변{i}: {a}\n"
+    
+    prompt = f"""당신은 자청(역행자), 엠제이 드마코(부의 추월차선), 김승호(돈의 속성)의 문체를 완벽히 체화한 고스트라이터입니다.
+당신이 쓴 글은 독자가 "이건 내 얘기잖아"라고 느끼며 단숨에 읽게 만듭니다.
+당신의 글은 첫 문장부터 독자의 목덜미를 잡고 마지막 문장까지 놓지 않습니다.
+
+[집필 정보]
+전자책 주제: {topic}
+챕터 제목: {chapter_title}
+타겟 독자: {persona}
+
+[작가 인터뷰 내용 - 이것을 바탕으로 글을 작성하세요]
+{qa_pairs}
+
+[베스트셀러 글쓰기 원칙 - 자청/드마코 스타일]
+
+1. 첫 문장의 법칙 (Hook)
+   첫 문장에서 독자의 뒤통수를 쳐라. 첫 문장을 읽는 순간 다음 문장을 읽지 않을 수 없게 만들어라.
+   - 스토리 오프닝: "나는 그때 모든 것을 잃었다"
+   - 도발 오프닝: "당신이 알고 있는 것은 전부 틀렸다"
+   - 구체적 상황: "2019년 3월, 통장 잔고 47만원. 나는 바닥이었다"
+   - 질문 오프닝: "왜 열심히 하는 사람이 가난할까?"
+
+2. 문장 호흡 (리듬)
+   짧게. 끊어서. 리듬감 있게.
+   - 한 문장 최대 20자
+   - 3문장 짧게 → 1문장 약간 길게 → 다시 짧게 (리듬 변화)
+   - 한 문단 최대 4~5줄
+   
+3. 스토리텔링 (Show, Don't Tell)
+   추상적 조언은 죽은 글이다. 모든 것을 구체적 장면으로 보여줘라.
+   - BAD: "열심히 노력했다" 
+   - GOOD: "새벽 4시에 일어나 2시간 동안 글을 썼다. 6개월 동안 하루도 빠지지 않았다."
+   - BAD: "많은 돈을 벌었다"
+   - GOOD: "첫 달 매출 47만원. 3개월 후 380만원. 1년 후 월 2000만원을 찍었다."
+
+4. 공감 → 문제 제기 → 해결책 구조
+   - 공감: "당신도 이런 경험 있지 않은가?" (독자의 아픔을 건드림)
+   - 문제 제기: "근데 진짜 문제는 따로 있다" (새로운 관점 제시)
+   - 해결책: "나는 이렇게 해결했다" (구체적 방법 제시)
+
+5. 자청 스타일 문체 특징
+   - "솔직히 말할게" - 친밀감
+   - "이건 아무도 안 알려줘" - 비밀 공유
+   - "나도 처음엔 몰랐어" - 동질감
+   - "근데 이게 핵심이야" - 강조
+   - "~하면 인생이 바뀐다" - 비전 제시
+
+6. 드마코 스타일 문체 특징
+   - 메타포 활용: "인생은 고속도로다. 넌 어느 차선에 있는가?"
+   - 직설적 도발: "네가 가난한 건 운이 나빠서가 아니다"
+   - 숫자 활용: "부자의 99%는 이것을 안다"
+
+[절대 금지 - AI 티 나는 표현]
+- "~입니다", "~하겠습니다" 반복 (딱딱함)
+- "중요합니다", "필요합니다", "해야 합니다" (교과서)
+- "첫째, 둘째, 셋째" 나열식 (보고서)
+- "결론적으로", "따라서", "그러므로" (논문)
+- "~에 대해 알아보겠습니다" (블로그)
+- "많은 분들이", "다양한" (모호함)
+
+[미션]
+위 인터뷰 내용을 바탕으로 3500~4500자 분량의 챕터를 작성하세요.
+
+조건:
+1. 첫 문장에서 독자의 뒤통수를 쳐라
+2. 읽는 사람이 중간에 멈출 수 없을 정도로 몰입감 있게
+3. 추상적 조언 대신 구체적 장면과 숫자로
+4. 자청/드마코 스타일의 문체로
+5. AI가 쓴 티가 나면 실패
+
+글의 톤: 10년 선배가 술 한잔 하면서 후배에게 진심으로 조언해주는 느낌. 약간의 독설 + 따뜻한 진심."""
+    return ask_ai("베스트셀러 고스트라이터", prompt, temperature=0.8)
+
+def refine_content(content, style="친근한"):
+    style_guide = {
+        "친근한": """자청(역행자) 스타일
+- 친구에게 말하듯 편안하고 솔직한 톤
+- "솔직히 말할게", "이건 진짜야", "나도 그랬어"
+- 약간의 반말 섞인 존댓말
+- 독자를 '너' 또는 '당신'으로 호칭""",
+        
+        "전문적": """김승호(돈의 속성) 스타일
+- 신뢰감 있고 권위있는 전문가 톤
+- 구체적 숫자와 데이터로 신뢰 구축
+- 차분하지만 확신에 찬 어조
+- 경험에서 우러나온 통찰""",
+        
+        "직설적": """엠제이 드마코(부의 추월차선) 스타일
+- 핵심만 간결하게, 군더더기 제로
+- 도발적이고 직설적인 표현
+- "~하지 마라", "~은 거짓말이다"
+- 독자의 안일함을 깨우는 톤""",
+        
+        "스토리텔링": """스토리 중심 스타일
+- 모든 조언을 구체적 장면으로 전달
+- 시간, 장소, 감정을 생생하게 묘사
+- "그날 나는...", "그때 깨달았다..."
+- 독자가 영화를 보듯 읽게 만듦"""
+    }
+    
+    prompt = f"""당신은 베스트셀러 전자책 전문 에디터입니다.
+다음 글의 문체를 다듬어서 더 몰입감 있고 읽기 좋게 만들어주세요.
+
+[원본 글]
+{content}
+
+[목표 스타일]
+{style_guide.get(style, style_guide["친근한"])}
+
+[문체 다듬기 체크리스트]
+
+1. AI 티 제거
+   - "~입니다", "~하겠습니다" 반복 → 다양한 종결어미로 변경
+   - "중요합니다", "필요합니다" → 더 강렬한 표현으로
+   - "첫째, 둘째, 셋째" → 자연스러운 연결로
+   - "따라서", "그러므로" → 제거하거나 구어체로
+
+2. 문장 리듬 개선
+   - 긴 문장(30자 이상) → 2~3개로 분리
+   - 비슷한 길이 문장 연속 → 길이 변화 주기
+   - 수동태 → 능동태로
+
+3. 구체성 강화
+   - 추상적 표현 → 구체적 숫자/상황으로
+   - "많이", "다양하게" → 구체적 수치로
+   - "잘 됐다" → 어떻게 잘 됐는지 구체적으로
+
+4. 몰입감 강화
+   - 평범한 시작 → 훅(Hook)으로 변경
+   - 설명 위주 → 장면 묘사로
+   - 일반론 → 개인 경험담으로
+
+[미션]
+위 원본 글을 {style} 스타일로 다듬어주세요.
+내용은 유지하되, 읽는 사람이 손에서 책을 놓을 수 없게 만들어주세요.
+반드시 전체 글을 다듬어서 출력해주세요."""
+    return ask_ai("베스트셀러 에디터", prompt, temperature=0.75)
+
+def check_quality(content):
+    prompt = f"""당신은 "역행자", "부의 추월차선", "돈의 속성" 수준의 베스트셀러를 편집한 전문 편집자입니다.
+다음 글이 베스트셀러 수준인지 냉정하게 평가해주세요.
+
+[평가할 글]
+{content[:4000]}
+
+[평가 기준 - 베스트셀러 체크리스트]
+
+1. 첫 문장 (10점)
+   - 첫 문장이 독자의 뒤통수를 치는가?
+   - 첫 문장만 읽고도 다음이 궁금한가?
+
+2. 몰입도 (10점)
+   - 중간에 멈추지 않고 끝까지 읽게 되는가?
+   - 문장 리듬이 좋은가?
+
+3. 공감력 (10점)
+   - 독자가 "이건 내 얘기잖아"라고 느끼는가?
+   - 타겟의 아픔을 정확히 건드리는가?
+
+4. 구체성 (10점)
+   - 추상적 조언 대신 구체적 장면/숫자가 있는가?
+   - "열심히 했다" 대신 "새벽 4시에 일어났다" 수준인가?
+
+5. AI 티 (10점, 감점 항목)
+   - "~입니다" 반복, "따라서", "중요합니다" 등 AI 표현이 있는가?
+   - 문장이 너무 균일하고 딱딱한가?
+
+[출력 형식]
+
+📊 종합 점수: __/50점
+
+📌 첫 문장 평가: __/10점
+- 현재 첫 문장: "[첫 문장 인용]"
+- 평가: [좋은 점 또는 문제점]
+- 개선안: "[더 좋은 첫 문장 제안]"
+
+📌 몰입도 평가: __/10점
+- [구체적 평가]
+
+📌 공감력 평가: __/10점
+- [구체적 평가]
+
+📌 구체성 평가: __/10점
+- [구체적 평가]
+
+📌 AI 티 체크: __/10점
+- 발견된 AI 표현: [있다면 나열]
+- 개선이 필요한 문장: [3개까지]
+
+✍️ 수정하면 좋을 문장 TOP 3
+1. 원문: "..." → 수정안: "..."
+2. 원문: "..." → 수정안: "..."
+3. 원문: "..." → 수정안: "..."
+
+💡 잘 쓴 문장 TOP 2
+1. "[잘 쓴 문장]" - 좋은 이유
+2. "[잘 쓴 문장]" - 좋은 이유
+
+🎯 총평
+[베스트셀러가 되기 위해 가장 중요한 개선점 1~2가지]"""
+    return ask_ai("베스트셀러 편집자", prompt, temperature=0.6)
+
+def generate_marketing_copy(title, subtitle, topic, persona):
+    prompt = f"""당신은 크몽에서 전자책을 수천 권 판매한 탑셀러입니다.
+당신의 상세페이지는 방문자의 15%가 구매하는 전설적인 전환율을 기록합니다.
+당신의 카피는 읽는 순간 "이거 안 사면 손해"라는 느낌을 줍니다.
+
+[상품 정보]
+제목: {title}
+부제: {subtitle}
+주제: {topic}
+타겟: {persona}
+
+[미션]
+이 전자책을 폭발적으로 팔기 위한 킬러 카피를 만들어주세요.
+
+---
+
+1. 크몽 상품 제목 (40자 이내)
+   - 검색 키워드 포함 (SEO)
+   - 구체적 결과/숫자 제시
+   - 예시: "[PDF] 월 300벌게 해준 크몽 전자책 공식 | 실제 매출 인증"
+   - 예시: "31개월 만에 10억 번 비밀 | 직장인 부업 전자책"
+
+2. 상세페이지 헤드라인 3개
+   - 스크롤을 멈추게 만드는 한 줄
+   - 상식을 파괴하거나 충격을 줘야 함
+   - 금지: "~하는 법", "~방법", "~가이드"
+   - 예시: "월급만 믿다가는 평생 가난하다"
+   - 예시: "나는 퇴사 3개월 만에 월급보다 더 벌었다"
+
+3. 구매 유도 문구 (CTA) 3개
+   - 긴급성 + FOMO(놓치면 후회) 자극
+   - 구체적 숫자 활용
+   - 예시: "이 가격은 100부 한정입니다"
+   - 예시: "어제도 47명이 구매했습니다"
+   - 예시: "지금 안 사면, 다음 달에는 2배입니다"
+
+4. 인스타그램 홍보 문구
+   - 첫 줄에서 스크롤 멈추게 (훅 필수)
+   - 스토리텔링 요소 포함
+   - 해시태그 5개 (검색량 높은 것)
+   - 형식:
+     [훅 - 첫 줄]
+     
+     [스토리 - 2~3줄]
+     
+     [CTA]
+     
+     #해시태그1 #해시태그2 ...
+
+5. 블로그 포스팅 제목 3개
+   - 검색 유입 + 클릭 유도
+   - 궁금증 유발형
+   - 예시: "크몽 전자책으로 월 500버는 사람들의 공통점 (실화)"
+   - 예시: "직장인 부업 3개월 해본 후기 (feat. 월 수익 공개)"
+
+---
+
+모든 카피의 핵심 원칙:
+- "이거 안 보면 나만 손해" 느낌
+- 구체적 숫자로 신뢰감
+- 호기심 자극 → 클릭 유도 → 구매 전환"""
+    return ask_ai("크몽 탑셀러 마케터", prompt, temperature=0.85)
+
+# --- 메인 UI ---
+st.markdown("""
+<div class="hero-section">
+    <div class="hero-label">CASHMAKER</div>
+    <div class="hero-title">전자책 작성 프로그램</div>
+    <div class="hero-subtitle">쉽고, 빠른 전자책 수익화</div>
+</div>
+""", unsafe_allow_html=True)
+
+# 메인 탭
+tabs = st.tabs([
+    "주제 선정", 
+    "타겟 & 컨셉", 
+    "목차 설계", 
+    "본문 작성", 
+    "문체 다듬기",
+    "최종 출력"
+])
+
+# === TAB 1: 주제 선정 ===
+with tabs[0]:
+    st.markdown("## 주제 선정 & 적합도 분석")
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown('<p class="section-label">Step 01</p>', unsafe_allow_html=True)
+        st.markdown("### 주제 입력")
+        
+        topic_input = st.text_input(
+            "어떤 주제로 전자책을 쓰고 싶으세요?",
+            value=st.session_state['topic'],
+            placeholder="예: 크몽으로 월 500만원 벌기"
+        )
+        
+        if topic_input != st.session_state['topic']:
+            st.session_state['topic'] = topic_input
+            st.session_state['topic_score'] = None
+            st.session_state['score_details'] = None
+        
+        st.markdown("""
+        <div class="info-card">
+            <div class="info-card-title">좋은 주제의 조건</div>
+            <p>• 내가 직접 경험하고 성과를 낸 것</p>
+            <p>• 사람들이 돈 주고 배우고 싶어하는 것</p>
+            <p>• 구체적인 결과를 약속할 수 있는 것</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("적합도 분석하기", key="analyze_btn"):
+            if not topic_input:
+                st.error("주제를 입력해주세요.")
+            else:
+                with st.spinner("분석 중..."):
+                    result = analyze_topic_score(topic_input)
+                    try:
+                        json_match = re.search(r'\{[\s\S]*\}', result)
+                        if json_match:
+                            score_data = json.loads(json_match.group())
+                            st.session_state['topic_score'] = score_data.get('total_score', 0)
+                            st.session_state['topic_verdict'] = score_data.get('verdict', '분석 실패')
+                            st.session_state['score_details'] = score_data
+                    except:
+                        st.error("분석 결과 파싱 오류. 다시 시도해주세요.")
+    
+    with col2:
+        st.markdown('<p class="section-label">Step 02</p>', unsafe_allow_html=True)
+        st.markdown("### 분석 결과")
+        
+        if st.session_state['topic_score'] is not None:
+            score = st.session_state['topic_score']
+            verdict = st.session_state['topic_verdict']
+            details = st.session_state['score_details']
+            
+            verdict_class = "status-excellent" if verdict == "적합" else ("status-good" if verdict == "보통" else "status-warning")
+            
+            st.markdown(f"""
+            <div class="score-card">
+                <div class="score-number">{score}</div>
+                <div class="score-label">종합 점수</div>
+                <span class="status-badge {verdict_class}">{verdict}</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if details:
+                st.markdown("#### 세부 점수")
+                
+                items = [
+                    ("시장성", details.get('market', {}).get('score', 0), details.get('market', {}).get('reason', '')),
+                    ("수익성", details.get('profit', {}).get('score', 0), details.get('profit', {}).get('reason', '')),
+                    ("차별화", details.get('differentiation', {}).get('score', 0), details.get('differentiation', {}).get('reason', '')),
+                    ("작성 난이도", details.get('difficulty', {}).get('score', 0), details.get('difficulty', {}).get('reason', '')),
+                    ("지속성", details.get('sustainability', {}).get('score', 0), details.get('sustainability', {}).get('reason', '')),
+                ]
+                
+                for name, score_val, reason in items:
+                    st.markdown(f"""
+                    <div class="score-item">
+                        <span class="score-item-label">{name}</span>
+                        <span class="score-item-value">{score_val}</span>
+                    </div>
+                    <p class="score-item-reason">{reason}</p>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                <div class="summary-box">
+                    <p><strong>종합 의견</strong><br>{details.get('summary', '')}</p>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="empty-state">
+                <p>주제를 입력하고 분석 버튼을 클릭하세요</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+# === TAB 2: 타겟 & 컨셉 ===
+with tabs[1]:
+    st.markdown("## 타겟 설정 & 제목 생성")
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown('<p class="section-label">Step 01</p>', unsafe_allow_html=True)
+        st.markdown("### 타겟 정의")
+        
+        persona = st.text_area(
+            "누가 이 책을 읽나요?",
+            value=st.session_state['target_persona'],
+            placeholder="예: 30대 직장인, 퇴근 후 부업으로 월 100만원 추가 수입을 원하는 사람",
+            height=100
+        )
+        st.session_state['target_persona'] = persona
+        
+        pain_points = st.text_area(
+            "타겟의 가장 큰 고민은?",
+            value=st.session_state['pain_points'],
+            placeholder="예: 시간이 없다, 뭘 해야 할지 모르겠다, 시작이 두렵다",
+            height=100
+        )
+        st.session_state['pain_points'] = pain_points
+        
+        st.markdown("---")
+        
+        st.markdown('<p class="section-label">Step 02</p>', unsafe_allow_html=True)
+        st.markdown("### 한 줄 컨셉")
+        
+        if st.button("컨셉 생성하기", key="concept_btn"):
+            if not st.session_state['topic'] or not persona:
+                st.error("주제와 타겟을 먼저 입력해주세요.")
+            else:
+                with st.spinner("생성 중..."):
+                    concept = generate_concept(
+                        st.session_state['topic'],
+                        persona,
+                        pain_points
+                    )
+                    st.session_state['one_line_concept'] = concept
+        
+        if st.session_state['one_line_concept']:
+            st.markdown(f"""
+            <div class="info-card">
+                {st.session_state['one_line_concept'].replace(chr(10), '<br>')}
+            </div>
+            """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown('<p class="section-label">Step 03</p>', unsafe_allow_html=True)
+        st.markdown("### 제목 생성")
+        
+        if st.button("제목 생성하기", key="title_btn"):
+            if not st.session_state['topic']:
+                st.error("주제를 먼저 입력해주세요.")
+            else:
+                with st.spinner("생성 중..."):
+                    titles_result = generate_titles_advanced(
+                        st.session_state['topic'],
+                        st.session_state['target_persona'],
+                        st.session_state['pain_points']
+                    )
+                    try:
+                        json_match = re.search(r'\{[\s\S]*\}', titles_result)
+                        if json_match:
+                            st.session_state['generated_titles'] = json.loads(json_match.group())
+                    except:
+                        st.session_state['generated_titles'] = None
+                        st.markdown(titles_result)
+        
+        if st.session_state.get('generated_titles'):
+            titles_data = st.session_state['generated_titles']
+            if 'titles' in titles_data:
+                for i, t in enumerate(titles_data['titles'], 1):
+                    st.markdown(f"""
+                    <div class="title-card">
+                        <div class="card-number">TITLE 0{i}</div>
+                        <div class="main-title">{t.get('title', '')}</div>
+                        <div class="sub-title">{t.get('subtitle', '')}</div>
+                        <div class="reason">{t.get('why_works', '')}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        st.markdown('<p class="section-label">Step 04</p>', unsafe_allow_html=True)
+        st.markdown("### 최종 선택")
+        st.session_state['book_title'] = st.text_input("제목", value=st.session_state['book_title'], placeholder="최종 제목")
+        st.session_state['subtitle'] = st.text_input("부제", value=st.session_state['subtitle'], placeholder="부제")
+
+# === TAB 3: 목차 설계 ===
+with tabs[2]:
+    st.markdown("## 목차 설계")
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown('<p class="section-label">Step 01</p>', unsafe_allow_html=True)
+        st.markdown("### AI 목차 생성")
+        
+        if st.button("목차 생성하기", key="outline_btn"):
+            if not st.session_state['topic']:
+                st.error("주제를 먼저 입력해주세요.")
+            else:
+                with st.spinner("설계 중..."):
+                    outline_text = generate_outline(
+                        st.session_state['topic'],
+                        st.session_state['target_persona'],
+                        st.session_state['pain_points']
+                    )
+                    chapters = re.findall(r'## (챕터\d+:?\s*.+)', outline_text)
+                    if not chapters:
+                        chapters = re.findall(r'(?:^|\n)(\d+\..+)', outline_text)
+                    if not chapters:
+                        chapters = [line.strip() for line in outline_text.split('\n') if line.strip() and len(line.strip()) > 5][:7]
+                    
+                    st.session_state['outline'] = chapters
+                    st.session_state['full_outline'] = outline_text
+        
+        if 'full_outline' in st.session_state and st.session_state['full_outline']:
+            st.text_area("전체 목차", value=st.session_state['full_outline'], height=400, key="full_outline_display")
+    
+    with col2:
+        st.markdown('<p class="section-label">Step 02</p>', unsafe_allow_html=True)
+        st.markdown("### 목차 편집")
+        
+        if st.session_state['outline']:
+            edited_outline = []
+            for i, chapter in enumerate(st.session_state['outline']):
+                edited = st.text_input(f"챕터 {i+1}", value=chapter, key=f"chapter_{i}")
+                edited_outline.append(edited)
+            
+            if st.button("저장하기", key="save_outline"):
+                st.session_state['outline'] = [ch for ch in edited_outline if ch.strip()]
+                for ch in st.session_state['outline']:
+                    if ch not in st.session_state['chapters']:
+                        st.session_state['chapters'][ch] = {'questions': [], 'answers': [], 'content': ''}
+                st.success("저장됨")
+        else:
+            st.info("먼저 목차를 생성하세요.")
+
+# === TAB 4: 본문 작성 ===
+with tabs[3]:
+    st.markdown("## 본문 작성")
+    
+    if not st.session_state['outline']:
+        st.warning("먼저 목차를 생성해주세요.")
+    else:
+        selected_chapter = st.selectbox(
+            "챕터 선택",
+            st.session_state['outline'],
+            key="chapter_select"
+        )
+        
+        if selected_chapter not in st.session_state['chapters']:
+            st.session_state['chapters'][selected_chapter] = {'questions': [], 'answers': [], 'content': ''}
+        
+        chapter_data = st.session_state['chapters'][selected_chapter]
+        
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            st.markdown('<p class="section-label">Step 01</p>', unsafe_allow_html=True)
+            st.markdown("### 인터뷰")
+            
+            if st.button("질문 생성하기", key="gen_questions"):
+                with st.spinner("생성 중..."):
+                    questions_text = generate_interview_questions(selected_chapter, st.session_state['topic'])
+                    questions = re.findall(r'Q\d+:\s*(.+)', questions_text)
+                    if not questions:
+                        questions = [q.strip() for q in questions_text.split('\n') if q.strip() and '?' in q][:5]
+                    chapter_data['questions'] = questions
+                    chapter_data['answers'] = [''] * len(questions)
+            
+            if chapter_data['questions']:
+                for i, q in enumerate(chapter_data['questions']):
+                    st.markdown(f"**Q{i+1}.** {q}")
+                    chapter_data['answers'][i] = st.text_area(
+                        f"A{i+1}",
+                        value=chapter_data['answers'][i] if i < len(chapter_data['answers']) else '',
+                        key=f"answer_{selected_chapter}_{i}",
+                        height=80,
+                        label_visibility="collapsed"
+                    )
+        
+        with col2:
+            st.markdown('<p class="section-label">Step 02</p>', unsafe_allow_html=True)
+            st.markdown("### 본문")
+            
+            if st.button("본문 생성하기", key="gen_content"):
+                if not chapter_data['questions'] or not any(chapter_data['answers']):
+                    st.error("질문과 답변을 먼저 작성해주세요.")
+                else:
+                    with st.spinner("작성 중... (1~2분)"):
+                        content = generate_chapter_content(
+                            selected_chapter,
+                            chapter_data['questions'],
+                            chapter_data['answers'],
+                            st.session_state['topic'],
+                            st.session_state['target_persona']
+                        )
+                        chapter_data['content'] = content
+            
+            if chapter_data['content']:
+                edited_content = st.text_area(
+                    "편집",
+                    value=chapter_data['content'],
+                    height=500,
+                    key=f"content_{selected_chapter}",
+                    label_visibility="collapsed"
+                )
+                chapter_data['content'] = edited_content
+                st.caption(f"{len(edited_content):,}자")
+
+# === TAB 5: 문체 다듬기 ===
+with tabs[4]:
+    st.markdown("## 문체 다듬기")
+    
+    if not st.session_state['chapters'] or not any(ch.get('content') for ch in st.session_state['chapters'].values()):
+        st.warning("먼저 본문을 작성해주세요.")
+    else:
+        completed_chapters = [ch for ch in st.session_state['outline'] 
+                           if ch in st.session_state['chapters'] 
+                           and st.session_state['chapters'][ch].get('content')]
+        
+        if completed_chapters:
+            selected = st.selectbox("챕터", completed_chapters, key="refine_select")
+            
+            col1, col2 = st.columns([1, 1])
+            
+            with col1:
+                st.markdown('<p class="section-label">Step 01</p>', unsafe_allow_html=True)
+                st.markdown("### 스타일 변환")
+                
+                style = st.selectbox(
+                    "문체",
+                    ["친근한", "전문적", "직설적", "스토리텔링"],
+                    key="style_select"
+                )
+                
+                if st.button("변환하기", key="refine_btn"):
+                    with st.spinner("변환 중..."):
+                        refined = refine_content(
+                            st.session_state['chapters'][selected]['content'],
+                            style
+                        )
+                        st.session_state['chapters'][selected]['refined'] = refined
+                
+                if st.session_state['chapters'][selected].get('refined'):
+                    refined_edit = st.text_area(
+                        "결과",
+                        value=st.session_state['chapters'][selected]['refined'],
+                        height=400,
+                        key="refined_content",
+                        label_visibility="collapsed"
+                    )
+                    
+                    if st.button("적용하기", key="apply_refined"):
+                        st.session_state['chapters'][selected]['content'] = refined_edit
+                        st.success("적용됨")
+            
+            with col2:
+                st.markdown('<p class="section-label">Step 02</p>', unsafe_allow_html=True)
+                st.markdown("### 품질 검사")
+                
+                if st.button("검사하기", key="quality_btn"):
+                    with st.spinner("분석 중..."):
+                        quality = check_quality(st.session_state['chapters'][selected]['content'])
+                        st.markdown(f"""
+                        <div class="info-card">
+                            {quality.replace(chr(10), '<br>')}
+                        </div>
+                        """, unsafe_allow_html=True)
+
+# === TAB 6: 최종 출력 ===
+with tabs[5]:
+    st.markdown("## 최종 출력")
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown('<p class="section-label">Preview</p>', unsafe_allow_html=True)
+        st.markdown("### 전자책")
+        
+        full_book = f"""# {st.session_state.get('book_title', '제목 없음')}
+## {st.session_state.get('subtitle', '')}
+
+---
+
+"""
+        for chapter in st.session_state['outline']:
+            if chapter in st.session_state['chapters'] and st.session_state['chapters'][chapter].get('content'):
+                full_book += f"\n\n# {chapter}\n\n"
+                full_book += st.session_state['chapters'][chapter]['content']
+        
+        st.text_area("원고", value=full_book, height=400, key="full_book", label_visibility="collapsed")
+        
+        total_chars = len(full_book)
+        completed = sum(1 for ch in st.session_state['chapters'].values() if ch.get('content'))
+        total = len(st.session_state['outline']) if st.session_state['outline'] else 1
+        
+        col_stat1, col_stat2, col_stat3 = st.columns(3)
+        with col_stat1:
+            st.metric("글자수", f"{total_chars:,}")
+        with col_stat2:
+            st.metric("챕터", f"{completed}/{total}")
+        with col_stat3:
+            st.metric("페이지", f"~{total_chars//1500}")
+        
+        st.markdown("---")
+        
+        col_dl1, col_dl2 = st.columns(2)
+        with col_dl1:
+            st.download_button(
+                "TXT 다운로드",
+                full_book,
+                file_name=f"{st.session_state.get('book_title', 'ebook')}_{datetime.now().strftime('%Y%m%d')}.txt",
+                mime="text/plain"
+            )
+        
+        with col_dl2:
+            html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{st.session_state.get('book_title', '전자책')}</title>
+    <style>
+        body {{ font-family: 'Pretendard', sans-serif; max-width: 720px; margin: 0 auto; padding: 60px 20px; line-height: 1.8; color: #222; }}
+        h1 {{ font-size: 2rem; font-weight: 700; }}
+        h2 {{ font-size: 1.5rem; margin-top: 50px; }}
+    </style>
+</head>
+<body>
+{full_book.replace(chr(10), '<br>')}
+</body>
+</html>"""
+            
+            st.download_button(
+                "HTML 다운로드",
+                html_content,
+                file_name=f"{st.session_state.get('book_title', 'ebook')}_{datetime.now().strftime('%Y%m%d')}.html",
+                mime="text/html"
+            )
+    
+    with col2:
+        st.markdown('<p class="section-label">Marketing</p>', unsafe_allow_html=True)
+        st.markdown("### 마케팅 카피")
+        
+        if st.button("카피 생성하기", key="marketing_btn"):
+            with st.spinner("생성 중..."):
+                marketing = generate_marketing_copy(
+                    st.session_state.get('book_title', st.session_state['topic']),
+                    st.session_state.get('subtitle', ''),
+                    st.session_state['topic'],
+                    st.session_state['target_persona']
+                )
+                st.session_state['marketing_copy'] = marketing
+        
+        if st.session_state.get('marketing_copy'):
+            st.markdown(f"""
+            <div class="info-card">
+                {st.session_state['marketing_copy'].replace(chr(10), '<br>')}
+            </div>
+            """, unsafe_allow_html=True)
+
+# --- 푸터 ---
+st.markdown("""
+<div class="premium-footer">
+    <span class="premium-footer-text">전자책 작성 프로그램 — </span><span class="premium-footer-author">남현우 작가</span>
+</div>
+""", unsafe_allow_html=True)
