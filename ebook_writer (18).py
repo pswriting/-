@@ -1056,49 +1056,66 @@ def generate_subtopic_content(subtopic_title, chapter_title, questions, answers,
         if a.strip():
             qa_pairs += f"\n질문{i}: {q}\n답변{i}: {a}\n"
     
-    prompt = f"""[집필 정보]
+    prompt = f"""당신은 자청, 신사임당 수준의 베스트셀러 작가입니다.
+
+[집필 정보]
 주제: {topic}
 챕터: {chapter_title}
 소제목: {subtopic_title}
 타겟: {persona}
 
-[작가 인터뷰]
+[작가 인터뷰 - 이 내용만 바탕으로 작성]
 {qa_pairs}
 
-[가장 중요한 규칙 - 문단 구성]
-절대로 한 문장마다 줄바꿈하지 마세요.
-반드시 3~5문장을 하나의 문단으로 묶으세요.
-문단과 문단 사이에만 빈 줄을 넣으세요.
+[자청 스타일 글쓰기 - 핵심 원칙]
 
-올바른 예시:
-"크몽에서 처음 서비스를 올렸을 때 반응은 처참했다. 3개월 동안 단 한 건의 판매도 없었다. 조회수는 바닥이었고, 문의조차 들어오지 않았다. 당시 직장 월급은 250만 원, 통장 잔고는 47만 원이었다.
+1. 첫 문장부터 후킹
+   - 독자가 "뭐지?" 하고 멈추게 만드는 첫 문장
+   - 결론이나 충격적 사실부터 시작
+   
+   나쁜 예: "'크몽'에서 월 1,000만 원의 현금 흐름을 만드는 것은 꿈같은 이야기가 아닙니다."
+   좋은 예: "저는 왕따였습니다. 지금은 월 1,000만 원을 법니다."
 
-그때 전략을 바꿨다. 가격을 절반으로 내리고, 서비스 설명을 전면 수정했다. 포트폴리오 대신 고객 후기를 전면에 내세웠다. 2주 후 첫 주문이 들어왔다."
+2. 문단 구성
+   - 한 문단 2~4문장
+   - 절대 한 문장씩 띄어쓰기 금지
+   - 문단 사이만 빈 줄
 
-잘못된 예시 (절대 이렇게 쓰지 마세요):
-"크몽에서 처음 서비스를 올렸다.
+3. 비유는 최소화
+   - 비유는 글 전체에서 1~2개만
+   - 억지 비유 금지 ("썩은 웅덩이", "숨겨진 보물" 같은 거 쓰지 마세요)
+   - 비유 대신 구체적 사실과 숫자로 설득
 
-반응은 처참했다.
+4. 팩트와 스토리로 몰입
+   - 구체적인 상황 묘사 (언제, 어디서, 무슨 일이)
+   - 감정보다 행동과 결과 중심
+   - "느꼈습니다" 대신 "했습니다"
+   
+   나쁜 예: "절망감이 밀려왔습니다. 희망이 사라지는 것 같았습니다."
+   좋은 예: "3개월 동안 매출 0원. 저는 서비스 가격을 절반으로 내렸습니다."
 
-3개월 동안 판매가 없었다."
-
-[글쓰기 스타일]
-- 비유는 글 전체에서 최대 1개만
-- 감정 표현 최소화 (절망, 희망, 꿈 등 쓰지 마세요)
-- 구체적 숫자와 행동 중심
-- 담백하고 직접적인 톤
+5. 담백하고 직접적인 톤
+   - 과장 없이 사실 그대로
+   - 독자에게 직접 말하듯
+   - 짧고 힘 있는 문장
 
 [절대 금지]
 - 한 문장씩 띄어쓰기
-- 과도한 비유
+- 과도한 비유 (글 전체에 2개 이상)
 - "~같은 이야기가 아닙니다" 같은 뻔한 표현
-- 교훈적 마무리
+- "마치 ~처럼", "~와 같았습니다" 남발
+- 감정 과잉 표현 ("절망", "희망", "꿈")
+- 교훈적 마무리 ("포기하지 마세요")
+- **굵은글씨**, *기울임*
+- 주어 뒤 쉼표
 
 [분량]
-1500~2000자
+1500~2000자 (반드시 1500자 이상)
 
-위 인터뷰 내용으로 '{subtopic_title}' 본문을 작성하세요. 문단 구성을 반드시 지켜주세요."""
-    return ask_ai("작가", prompt, temperature=0.75)
+[미션]
+위 인터뷰 내용을 바탕으로 '{subtopic_title}' 본문을 작성하세요.
+자청처럼 담백하고, 팩트 중심으로, 끝까지 읽게 만드세요."""
+    return ask_ai("베스트셀러 작가", prompt, temperature=0.8)
 
 
 def refine_content(content, style="친근한"):
@@ -1279,6 +1296,33 @@ def generate_marketing_copy(title, subtitle, topic, persona):
 - 구체적 숫자로 신뢰감
 - 호기심 자극 → 클릭 유도 → 구매 전환"""
     return ask_ai("크몽 탑셀러 마케터", prompt, temperature=0.85)
+
+
+# ==========================================
+# 🔧 글자 수 계산 헬퍼 함수 (통일된 계산 방식)
+# ==========================================
+def calculate_char_count(text):
+    """순수 본문만으로 글자 수 계산 (공백, 줄바꿈 제외)"""
+    if not text:
+        return 0
+    return len(text.replace('\n', '').replace(' ', ''))
+
+def get_all_content_text():
+    """모든 챕터의 순수 본문 텍스트만 수집"""
+    pure_content = ""
+    for ch in st.session_state.get('outline', []):
+        if ch in st.session_state.get('chapters', {}):
+            ch_data = st.session_state['chapters'][ch]
+            if 'subtopic_data' in ch_data:
+                subtopic_list = ch_data.get('subtopics', [])
+                if not subtopic_list and ch in ch_data['subtopic_data']:
+                    subtopic_list = [ch]
+                for st_name in subtopic_list:
+                    st_data = ch_data['subtopic_data'].get(st_name, {})
+                    if st_data.get('content'):
+                        pure_content += st_data['content']
+    return pure_content
+
 
 # --- 메인 UI ---
 st.markdown("""
@@ -1993,6 +2037,9 @@ with tabs[3]:
                 # 본문 생성 조건 체크
                 has_answers = subtopic_data.get('questions') and any(a.strip() for a in subtopic_data.get('answers', []))
                 
+                # 🔧 수정: 위젯 키 정의
+                content_widget_key = f"content_main_{selected_chapter}_{selected_subtopic}"
+                
                 if has_answers:
                     if st.button("✨ 본문 생성하기", key="gen_content_main"):
                         with st.spinner("집필 중... (30초~1분)"):
@@ -2004,34 +2051,44 @@ with tabs[3]:
                                 st.session_state['topic'],
                                 st.session_state['target_persona']
                             )
-                            # 직접 session_state에 저장
+                            # 🔧 수정: 데이터와 위젯 상태 모두 업데이트
                             st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic]['content'] = content
+                            st.session_state[content_widget_key] = content  # 위젯 키도 업데이트
                             trigger_auto_save()
-                            st.rerun()  
+                            st.rerun()
                 else:
                     st.info("👈 먼저 인터뷰 질문에 답변해주세요.")
                 
-                # 현재 저장된 본문 가져오기
-                current_content = st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic].get('content', '')
+                # 🔧 수정: 현재 저장된 본문 가져오기 (위젯 상태 우선, 없으면 데이터에서)
+                current_content = st.session_state.get(
+                    content_widget_key, 
+                    st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic].get('content', '')
+                )
+                
+                # 🔧 수정: 위젯 상태가 비어있고 데이터에는 있는 경우 동기화
+                stored_content = st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic].get('content', '')
+                if not current_content and stored_content:
+                    current_content = stored_content
+                    st.session_state[content_widget_key] = stored_content
                 
                 # 본문 표시 및 편집
                 edited_content = st.text_area(
                     "본문 내용",
                     value=current_content,
                     height=400,
-                    key=f"content_{selected_subtopic[:20]}",
+                    key=content_widget_key,
                     label_visibility="collapsed"
                 )
                 
-                # 편집된 내용 저장
-                if edited_content and edited_content != current_content:
-                    st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic]['content'] = edited_content
+                # 편집된 내용 저장 (위젯에서 직접 가져옴)
+                if content_widget_key in st.session_state:
+                    st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic]['content'] = st.session_state[content_widget_key]
                 
-                # 저장된 내용 다시 확인
-                saved_content = st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic].get('content', '')
-                if saved_content:
-                    char_count = len(saved_content)
-                    st.caption(f"📊 {char_count}자")
+                # 🔧 수정: 글자 수 계산 - 저장된 데이터 기준
+                final_content = st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic].get('content', '')
+                if final_content:
+                    char_count = calculate_char_count(final_content)
+                    st.caption(f"📊 {char_count:,}자")
                     st.success(f"✅ '{selected_subtopic}' 본문 작성 완료!")
         
         # 소제목 편집 (접혀있는 상태)
@@ -2108,6 +2165,9 @@ with tabs[3]:
             
             subtopic_data = chapter_data['subtopic_data'][chapter_as_subtopic]
             
+            # 🔧 수정: 위젯 키 정의
+            content_widget_key_special = f"content_special_{selected_chapter}"
+            
             col1, col2 = st.columns([1, 1])
             
             with col1:
@@ -2160,29 +2220,42 @@ with tabs[3]:
                                 st.session_state['topic'],
                                 st.session_state['target_persona']
                             )
+                            # 🔧 수정: 데이터와 위젯 상태 모두 업데이트
                             st.session_state['chapters'][selected_chapter]['subtopic_data'][chapter_as_subtopic]['content'] = content
+                            st.session_state[content_widget_key_special] = content
                             trigger_auto_save()
-                            st.rerun()  
+                            st.rerun()
                 else:
                     st.info("👈 먼저 인터뷰 질문에 답변해주세요.")
                 
-                current_content = st.session_state['chapters'][selected_chapter]['subtopic_data'].get(chapter_as_subtopic, {}).get('content', '')
+                # 🔧 수정: 현재 저장된 본문 가져오기
+                current_content = st.session_state.get(
+                    content_widget_key_special,
+                    st.session_state['chapters'][selected_chapter]['subtopic_data'].get(chapter_as_subtopic, {}).get('content', '')
+                )
+                
+                # 위젯 상태가 비어있고 데이터에는 있는 경우 동기화
+                stored_content = st.session_state['chapters'][selected_chapter]['subtopic_data'].get(chapter_as_subtopic, {}).get('content', '')
+                if not current_content and stored_content:
+                    current_content = stored_content
+                    st.session_state[content_widget_key_special] = stored_content
                 
                 edited_content = st.text_area(
                     "본문 내용",
                     value=current_content,
                     height=400,
-                    key=f"content_special_{selected_chapter[:15]}",
+                    key=content_widget_key_special,
                     label_visibility="collapsed"
                 )
                 
-                if edited_content and edited_content != current_content:
-                    st.session_state['chapters'][selected_chapter]['subtopic_data'][chapter_as_subtopic]['content'] = edited_content
+                # 편집된 내용 저장
+                if content_widget_key_special in st.session_state:
+                    st.session_state['chapters'][selected_chapter]['subtopic_data'][chapter_as_subtopic]['content'] = st.session_state[content_widget_key_special]
                 
-                saved_content = st.session_state['chapters'][selected_chapter]['subtopic_data'].get(chapter_as_subtopic, {}).get('content', '')
-                if saved_content:
-                    char_count = len(saved_content)
-                    st.caption(f"📊 {char_count}자")
+                final_content = st.session_state['chapters'][selected_chapter]['subtopic_data'].get(chapter_as_subtopic, {}).get('content', '')
+                if final_content:
+                    char_count = calculate_char_count(final_content)
+                    st.caption(f"📊 {char_count:,}자")
                     st.success(f"✅ '{selected_chapter}' 본문 작성 완료!")
         
         else:
@@ -2242,10 +2315,8 @@ with tabs[3]:
     st.markdown("---")
     st.markdown("### 📖 작성된 본문 통합 보기")
     
-    # 전체 본문 수집 (표시용)
+    # 🔧 수정: 통일된 글자 수 계산
     all_content_display = ""
-    # 순수 본문만 (글자 수 계산용)
-    pure_content = ""
     content_count_tab4 = 0
     
     for ch in st.session_state['outline']:
@@ -2264,16 +2335,17 @@ with tabs[3]:
                     st_data = ch_data['subtopic_data'].get(st_name, {})
                     if st_data.get('content'):
                         content_text = st_data['content']
-                        pure_content += content_text
                         chapter_content_display += f"\n### {st_name}\n\n{content_text}\n\n"
                         content_count_tab4 += 1
                 
                 if chapter_content_display:
                     all_content_display += f"\n## {ch}\n{chapter_content_display}"
     
+    # 🔧 수정: 통일된 글자 수 계산 함수 사용
+    pure_content = get_all_content_text()
+    
     if pure_content:
-        # 순수 본문만으로 글자 수 계산 (공백, 줄바꿈 제외)
-        total_chars_tab4 = len(pure_content.replace('\n', '').replace(' ', ''))
+        total_chars_tab4 = calculate_char_count(pure_content)
         st.success(f"✅ 총 {content_count_tab4}개 소제목 작성 완료 | {total_chars_tab4:,}자")
         
         with st.expander("📖 전체 본문 펼쳐보기", expanded=False):
@@ -2362,6 +2434,9 @@ with tabs[4]:
                     if len(parts) == 2:
                         ch, st_name = parts
                         st.session_state['chapters'][ch]['subtopic_data'][st_name]['content'] = st.session_state['refined_content']
+                        # 🔧 수정: 위젯 키도 업데이트
+                        widget_key = f"content_main_{ch}_{st_name}"
+                        st.session_state[widget_key] = st.session_state['refined_content']
                         st.success("적용됨!")
     
     with col2:
@@ -2692,8 +2767,9 @@ with tabs[5]:
         if all_content:
             st.success(f"✅ 총 {content_count}개 소제목 작성 완료")
             
-            # 전체 글자 수
-            total_chars = len(all_content.replace('\n', '').replace(' ', ''))
+            # 🔧 수정: 통일된 글자 수 계산
+            pure_content_tab6 = get_all_content_text()
+            total_chars = calculate_char_count(pure_content_tab6)
             st.caption(f"📊 총 {total_chars:,}자 / 약 {total_chars//500}페이지 (500자/페이지 기준)")
             
             # 본문 표시
