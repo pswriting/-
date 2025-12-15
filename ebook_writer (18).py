@@ -2553,7 +2553,7 @@ with tabs[3]:
     st.markdown("---")
     st.markdown("### 📖 작성된 본문 통합 보기")
     
-    # 🔧 수정: 통일된 글자 수 계산 + 목차 순서 보장
+    # 🔧 수정: 책 형식으로 깔끔하게 표시
     all_content_display = ""
     content_count_tab4 = 0
     
@@ -2562,7 +2562,8 @@ with tabs[3]:
         if ch in st.session_state['chapters']:
             ch_data = st.session_state['chapters'][ch]
             if 'subtopic_data' in ch_data:
-                chapter_content_display = ""
+                chapter_has_content = False
+                chapter_content_parts = []
                 
                 # 소제목이 있는 경우
                 subtopic_list = ch_data.get('subtopics', [])
@@ -2574,11 +2575,14 @@ with tabs[3]:
                     st_data = ch_data['subtopic_data'].get(st_name, {})
                     if st_data.get('content'):
                         content_text = st_data['content']
-                        chapter_content_display += f"\n### {st_name}\n\n{content_text}\n\n"
+                        chapter_content_parts.append(f"**{st_name}**\n\n{content_text}")
                         content_count_tab4 += 1
+                        chapter_has_content = True
                 
-                if chapter_content_display:
-                    all_content_display += f"\n## {ch}\n{chapter_content_display}"
+                if chapter_has_content:
+                    # 챕터 제목은 한 번만, 소제목들은 그 아래에
+                    all_content_display += f"\n\n---\n\n## {ch}\n\n"
+                    all_content_display += "\n\n".join(chapter_content_parts)
     
     # 🔧 수정: 통일된 글자 수 계산 함수 사용
     pure_content = get_all_content_text()
@@ -2588,7 +2592,88 @@ with tabs[3]:
         st.success(f"✅ 총 {content_count_tab4}개 소제목 작성 완료 | {total_chars_tab4:,}자")
         
         with st.expander("📖 전체 본문 펼쳐보기", expanded=False):
-            st.markdown(all_content_display)
+            # 고급스러운 책 형식 HTML
+            book_html = """
+            <style>
+                .book-container {
+                    font-family: 'Pretendard', -apple-system, sans-serif;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background: #fafafa;
+                    border-radius: 12px;
+                }
+                .book-chapter {
+                    margin-bottom: 40px;
+                    padding: 30px;
+                    background: white;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+                }
+                .book-chapter-title {
+                    font-size: 1.5em;
+                    font-weight: 700;
+                    color: #111;
+                    margin-bottom: 30px;
+                    padding-bottom: 15px;
+                    border-bottom: 2px solid #111;
+                }
+                .book-subtopic {
+                    margin-bottom: 30px;
+                }
+                .book-subtopic-title {
+                    font-size: 1.15em;
+                    font-weight: 600;
+                    color: #333;
+                    margin-bottom: 15px;
+                    padding-left: 15px;
+                    border-left: 3px solid #666;
+                }
+                .book-content {
+                    font-size: 1em;
+                    line-height: 1.9;
+                    color: #333;
+                    text-align: justify;
+                }
+                .book-content p {
+                    margin-bottom: 15px;
+                    text-indent: 1em;
+                }
+            </style>
+            <div class="book-container">
+            """
+            
+            # 챕터별로 HTML 생성
+            for ch_idx, ch in enumerate(st.session_state['outline'], 1):
+                if ch in st.session_state['chapters']:
+                    ch_data = st.session_state['chapters'][ch]
+                    if 'subtopic_data' in ch_data:
+                        subtopic_list = ch_data.get('subtopics', [])
+                        if not subtopic_list and ch in ch_data['subtopic_data']:
+                            subtopic_list = [ch]
+                        
+                        chapter_has_content = False
+                        chapter_html = f'<div class="book-chapter"><div class="book-chapter-title">{ch}</div>'
+                        
+                        for st_name in subtopic_list:
+                            st_data = ch_data['subtopic_data'].get(st_name, {})
+                            if st_data.get('content'):
+                                content_text = st_data['content'].replace('\n\n', '</p><p>').replace('\n', '<br>')
+                                chapter_html += f'''
+                                <div class="book-subtopic">
+                                    <div class="book-subtopic-title">{st_name}</div>
+                                    <div class="book-content"><p>{content_text}</p></div>
+                                </div>
+                                '''
+                                chapter_has_content = True
+                        
+                        chapter_html += '</div>'
+                        
+                        if chapter_has_content:
+                            book_html += chapter_html
+            
+            book_html += '</div>'
+            st.markdown(book_html, unsafe_allow_html=True)
     else:
         st.info("💡 아직 작성된 본문이 없습니다. 위에서 소제목을 선택하고 본문을 작성해주세요.")
 
@@ -2990,12 +3075,13 @@ with tabs[5]:
         all_content = ""
         content_count = 0
         
-        # outline 순서대로 처리 (목차 순서 보장)
+        # outline 순서대로 처리 (목차 순서 보장) - 책 형식
         for ch_idx, chapter in enumerate(st.session_state['outline'], 1):
             if chapter in st.session_state['chapters']:
                 ch_data = st.session_state['chapters'][chapter]
                 if 'subtopic_data' in ch_data:
-                    chapter_content = ""
+                    chapter_has_content = False
+                    chapter_content_parts = []
                     
                     # 소제목 목록 가져오기
                     subtopic_list = ch_data.get('subtopics', [])
@@ -3006,11 +3092,14 @@ with tabs[5]:
                     for st_name in subtopic_list:
                         st_data = ch_data['subtopic_data'].get(st_name, {})
                         if st_data.get('content'):
-                            chapter_content += f"\n### {st_name}\n\n{st_data['content']}\n\n"
+                            chapter_content_parts.append(f"**{st_name}**\n\n{st_data['content']}")
                             content_count += 1
+                            chapter_has_content = True
                     
-                    if chapter_content:
-                        all_content += f"\n## {chapter}\n{chapter_content}"
+                    if chapter_has_content:
+                        # 챕터 제목은 한 번만, 소제목들은 그 아래에
+                        all_content += f"\n\n---\n\n## {chapter}\n\n"
+                        all_content += "\n\n".join(chapter_content_parts)
         
         if all_content:
             st.success(f"✅ 총 {content_count}개 소제목 작성 완료")
@@ -3020,15 +3109,115 @@ with tabs[5]:
             total_chars = calculate_char_count(pure_content_tab6)
             st.caption(f"📊 총 {total_chars:,}자 / 약 {total_chars//500}페이지 (500자/페이지 기준)")
             
-            # 본문 표시
+            # 본문 표시 - 고급스러운 책 형식
             with st.expander("📖 전체 본문 펼쳐보기", expanded=False):
-                st.markdown(all_content)
+                # 고급스러운 책 형식 HTML
+                book_html = """
+                <style>
+                    .book-container-tab6 {
+                        font-family: 'Pretendard', -apple-system, sans-serif;
+                        max-width: 800px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: #fafafa;
+                        border-radius: 12px;
+                    }
+                    .book-chapter-tab6 {
+                        margin-bottom: 40px;
+                        padding: 30px;
+                        background: white;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+                    }
+                    .book-chapter-title-tab6 {
+                        font-size: 1.5em;
+                        font-weight: 700;
+                        color: #111;
+                        margin-bottom: 30px;
+                        padding-bottom: 15px;
+                        border-bottom: 2px solid #111;
+                    }
+                    .book-subtopic-tab6 {
+                        margin-bottom: 30px;
+                    }
+                    .book-subtopic-title-tab6 {
+                        font-size: 1.15em;
+                        font-weight: 600;
+                        color: #333;
+                        margin-bottom: 15px;
+                        padding-left: 15px;
+                        border-left: 3px solid #666;
+                    }
+                    .book-content-tab6 {
+                        font-size: 1em;
+                        line-height: 1.9;
+                        color: #333;
+                        text-align: justify;
+                    }
+                    .book-content-tab6 p {
+                        margin-bottom: 15px;
+                        text-indent: 1em;
+                    }
+                </style>
+                <div class="book-container-tab6">
+                """
+                
+                # 챕터별로 HTML 생성
+                for ch_idx, chapter in enumerate(st.session_state['outline'], 1):
+                    if chapter in st.session_state['chapters']:
+                        ch_data = st.session_state['chapters'][chapter]
+                        if 'subtopic_data' in ch_data:
+                            subtopic_list = ch_data.get('subtopics', [])
+                            if not subtopic_list and chapter in ch_data['subtopic_data']:
+                                subtopic_list = [chapter]
+                            
+                            chapter_has_content = False
+                            chapter_html = f'<div class="book-chapter-tab6"><div class="book-chapter-title-tab6">{chapter}</div>'
+                            
+                            for st_name in subtopic_list:
+                                st_data = ch_data['subtopic_data'].get(st_name, {})
+                                if st_data.get('content'):
+                                    content_text = st_data['content'].replace('\n\n', '</p><p>').replace('\n', '<br>')
+                                    chapter_html += f'''
+                                    <div class="book-subtopic-tab6">
+                                        <div class="book-subtopic-title-tab6">{st_name}</div>
+                                        <div class="book-content-tab6"><p>{content_text}</p></div>
+                                    </div>
+                                    '''
+                                    chapter_has_content = True
+                            
+                            chapter_html += '</div>'
+                            
+                            if chapter_has_content:
+                                book_html += chapter_html
+                
+                book_html += '</div>'
+                st.markdown(book_html, unsafe_allow_html=True)
             
-            # 편집 가능한 텍스트 영역
-            with st.expander("✏️ 전체 본문 편집하기", expanded=False):
+            # 편집 가능한 텍스트 영역 (마크다운 형식)
+            with st.expander("✏️ 전체 본문 편집하기 (텍스트)", expanded=False):
+                # 편집용 텍스트 생성
+                edit_text = ""
+                for chapter in st.session_state['outline']:
+                    if chapter in st.session_state['chapters']:
+                        ch_data = st.session_state['chapters'][chapter]
+                        if 'subtopic_data' in ch_data:
+                            subtopic_list = ch_data.get('subtopics', [])
+                            if not subtopic_list and chapter in ch_data['subtopic_data']:
+                                subtopic_list = [chapter]
+                            
+                            chapter_has_content = False
+                            for st_name in subtopic_list:
+                                st_data = ch_data['subtopic_data'].get(st_name, {})
+                                if st_data.get('content'):
+                                    if not chapter_has_content:
+                                        edit_text += f"\n\n{'='*50}\n{chapter}\n{'='*50}\n\n"
+                                        chapter_has_content = True
+                                    edit_text += f"[{st_name}]\n\n{st_data['content']}\n\n"
+                
                 edited_all = st.text_area(
                     "전체 본문 (편집 가능)",
-                    value=all_content,
+                    value=edit_text.strip(),
                     height=600,
                     key="full_content_edit"
                 )
