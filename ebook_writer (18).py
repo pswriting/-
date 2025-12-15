@@ -1558,14 +1558,56 @@ with tabs[2]:
                             st.session_state['target_persona'],
                             st.session_state['pain_points']
                         )
-                        chapters = re.findall(r'## (챕터\d+:?\s*.+)', outline_text)
-                        if not chapters:
-                            chapters = re.findall(r'(?:^|\n)(\d+\..+)', outline_text)
-                        if not chapters:
-                            chapters = [line.strip() for line in outline_text.split('\n') if line.strip() and len(line.strip()) > 5][:7]
                         
+                        # 챕터와 소제목 파싱
+                        lines = outline_text.split('\n')
+                        chapters = []
+                        current_chapter = None
+                        chapter_subtopics = {}
+                        
+                        for line in lines:
+                            line = line.strip()
+                            if not line:
+                                continue
+                            
+                            # 챕터 판별
+                            is_chapter = (
+                                line.startswith('## 챕터') or
+                                line.startswith('##챕터') or
+                                line.lower().startswith('챕터') or
+                                (len(line) > 0 and line[0].isdigit() and ('.' in line[:5] or ':' in line[:5]))
+                            )
+                            
+                            # 소제목 판별
+                            is_subtopic = line.startswith('-') or line.startswith('·') or line.startswith('•')
+                            
+                            if is_chapter and not is_subtopic:
+                                # ## 제거
+                                chapter_name = line.lstrip('#').strip()
+                                current_chapter = chapter_name
+                                chapters.append(current_chapter)
+                                chapter_subtopics[current_chapter] = []
+                            elif is_subtopic and current_chapter:
+                                subtopic = line.lstrip('-·• ').strip()
+                                if subtopic:
+                                    chapter_subtopics[current_chapter].append(subtopic)
+                        
+                        # 저장
                         st.session_state['outline'] = chapters
                         st.session_state['full_outline'] = outline_text
+                        
+                        # 챕터별 데이터 생성
+                        for ch in chapters:
+                            subtopics = chapter_subtopics.get(ch, [])
+                            st.session_state['chapters'][ch] = {
+                                'subtopics': subtopics,
+                                'subtopic_data': {st: {'questions': [], 'answers': [], 'content': ''} for st in subtopics}
+                            }
+                        
+                        # 결과 표시
+                        total_subtopics = sum(len(chapter_subtopics.get(ch, [])) for ch in chapters)
+                        st.success(f"✅ {len(chapters)}개 챕터, {total_subtopics}개 소제목 생성됨!")
+                        st.rerun()
             
             if 'full_outline' in st.session_state and st.session_state['full_outline']:
                 st.text_area("전체 목차", value=st.session_state['full_outline'], height=400, key="full_outline_display")
@@ -1576,41 +1618,97 @@ with tabs[2]:
             
             st.markdown("""
             <div class="info-card">
-                <div class="info-card-title">입력 형식 예시</div>
-                <p>챕터1: 왜 열심히 하는 사람이 가난할까</p>
-                <p>챕터2: 진짜 부자들의 비밀</p>
-                <p>챕터3: 3개월 만에 달라진 통장</p>
+                <div class="info-card-title">📌 입력 형식 (소제목 포함 가능)</div>
+                <p><b>챕터1: 왜 열심히 하는 사람이 가난할까</b></p>
+                <p>- 300만 원 VS 3억</p>
+                <p>- 당신이 실패한 이유는 ○○○○ 때문이다</p>
+                <p><b>챕터2: 진짜 부자들의 비밀</b></p>
+                <p>- 시중에 나온 브랜딩 전략은 사기다</p>
+                <p>- '이것'만 해도 작가 소리 듣는다</p>
                 <p>...</p>
+                <p style="color: #666; font-size: 0.85em;">💡 챕터는 "챕터" 또는 숫자로 시작, 소제목은 "-"로 시작</p>
             </div>
             """, unsafe_allow_html=True)
             
-            # 기존 목차가 있으면 표시
-            existing_outline = "\n".join(st.session_state['outline']) if st.session_state['outline'] else ""
+            # 기존 목차가 있으면 소제목 포함해서 표시
+            existing_outline = ""
+            if st.session_state['outline']:
+                for ch in st.session_state['outline']:
+                    existing_outline += f"{ch}\n"
+                    if ch in st.session_state['chapters']:
+                        for st_name in st.session_state['chapters'][ch].get('subtopics', []):
+                            existing_outline += f"- {st_name}\n"
             
             manual_outline = st.text_area(
-                "목차 입력 (한 줄에 하나씩)",
+                "목차 입력 (챕터와 소제목)",
                 value=existing_outline,
-                height=300,
-                placeholder="챕터1: 첫 번째 챕터 제목\n챕터2: 두 번째 챕터 제목\n...",
+                height=350,
+                placeholder="챕터1: 첫 번째 챕터 제목\n- 소제목 1\n- 소제목 2\n챕터2: 두 번째 챕터 제목\n- 소제목 1\n...",
                 key="manual_outline_input"
             )
             
             if st.button("✅ 목차 저장하기", key="save_manual_outline"):
                 if manual_outline.strip():
-                    chapters = [line.strip() for line in manual_outline.split('\n') if line.strip()]
+                    # 챕터와 소제목 파싱
+                    lines = manual_outline.strip().split('\n')
+                    chapters = []
+                    current_chapter = None
+                    chapter_subtopics = {}
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        
+                        # 챕터 판별 (챕터, Chapter, 숫자로 시작, 또는 에필로그/프롤로그)
+                        is_chapter = (
+                            line.lower().startswith('챕터') or 
+                            line.lower().startswith('chapter') or
+                            line.lower().startswith('에필로그') or
+                            line.lower().startswith('프롤로그') or
+                            (len(line) > 0 and line[0].isdigit() and ('.' in line[:5] or ':' in line[:5] or '장' in line[:5]))
+                        )
+                        
+                        # 소제목 판별 (-, ·, •로 시작)
+                        is_subtopic = line.startswith('-') or line.startswith('·') or line.startswith('•')
+                        
+                        if is_chapter and not is_subtopic:
+                            current_chapter = line
+                            chapters.append(current_chapter)
+                            chapter_subtopics[current_chapter] = []
+                        elif is_subtopic and current_chapter:
+                            subtopic = line.lstrip('-·• ').strip()
+                            if subtopic:
+                                chapter_subtopics[current_chapter].append(subtopic)
+                    
+                    # 저장
                     st.session_state['outline'] = chapters
                     st.session_state['full_outline'] = manual_outline
                     
-                    # 챕터별 초기 데이터 생성
+                    # 챕터별 데이터 생성 (기존 데이터 유지하면서 업데이트)
                     for ch in chapters:
+                        subtopics = chapter_subtopics.get(ch, [])
                         if ch not in st.session_state['chapters']:
                             st.session_state['chapters'][ch] = {
-                                'subtopics': [],  # 빈 상태로 시작
-                                'subtopic_data': {}
+                                'subtopics': subtopics,
+                                'subtopic_data': {st: {'questions': [], 'answers': [], 'content': ''} for st in subtopics}
                             }
+                        else:
+                            # 기존 챕터 업데이트 - 새 소제목 추가
+                            existing_subtopics = st.session_state['chapters'][ch].get('subtopics', [])
+                            for st_name in subtopics:
+                                if st_name not in existing_subtopics:
+                                    existing_subtopics.append(st_name)
+                                    st.session_state['chapters'][ch]['subtopic_data'][st_name] = {
+                                        'questions': [], 'answers': [], 'content': ''
+                                    }
+                            st.session_state['chapters'][ch]['subtopics'] = existing_subtopics
                     
                     trigger_auto_save()
-                    st.success(f"✅ {len(chapters)}개 챕터 저장됨!")
+                    
+                    # 결과 표시
+                    total_subtopics = sum(len(chapter_subtopics.get(ch, [])) for ch in chapters)
+                    st.success(f"✅ {len(chapters)}개 챕터, {total_subtopics}개 소제목 저장됨!")
                     st.rerun()
                 else:
                     st.error("목차를 입력해주세요.")
@@ -1622,10 +1720,20 @@ with tabs[2]:
         if st.session_state['outline']:
             edited_outline = []
             for i, chapter in enumerate(st.session_state['outline']):
-                col_ch, col_del = st.columns([5, 1])
+                # 소제목 개수 확인
+                subtopic_count = 0
+                if chapter in st.session_state['chapters']:
+                    subtopic_count = len(st.session_state['chapters'][chapter].get('subtopics', []))
+                
+                col_ch, col_info, col_del = st.columns([4, 1, 0.5])
                 with col_ch:
                     edited = st.text_input(f"챕터 {i+1}", value=chapter, key=f"chapter_{i}")
                     edited_outline.append(edited)
+                with col_info:
+                    if subtopic_count > 0:
+                        st.markdown(f"<span style='color: green; font-size: 0.85em;'>소제목 {subtopic_count}개</span>", unsafe_allow_html=True)
+                    else:
+                        st.markdown("<span style='color: #999; font-size: 0.85em;'>소제목 없음</span>", unsafe_allow_html=True)
                 with col_del:
                     if st.button("🗑️", key=f"del_chapter_{i}", help="삭제"):
                         st.session_state['outline'].pop(i)
@@ -1641,29 +1749,57 @@ with tabs[2]:
                 
                 # 전체 목차에서 챕터별 소제목 파싱
                 full_outline = st.session_state.get('full_outline', '')
+                
                 for ch in st.session_state['outline']:
-                    if ch not in st.session_state['chapters']:
-                        # 소제목 추출
-                        subtopics = []
-                        ch_pattern = re.escape(ch.split(':')[-1].strip() if ':' in ch else ch)
-                        lines = full_outline.split('\n')
-                        found_chapter = False
-                        for line in lines:
-                            if ch_pattern[:10] in line or (ch.split(':')[0] if ':' in ch else '') in line:
-                                found_chapter = True
-                                continue
-                            if found_chapter:
-                                if line.strip().startswith('##') or line.strip().startswith('챕터'):
-                                    break
-                                if line.strip().startswith('-'):
-                                    subtopic = line.strip().lstrip('-').strip()
-                                    if subtopic:
-                                        subtopics.append(subtopic)
+                    # 이미 소제목이 있는 챕터는 유지
+                    if ch in st.session_state['chapters'] and st.session_state['chapters'][ch].get('subtopics'):
+                        continue
+                    
+                    # 소제목 추출 시도
+                    subtopics = []
+                    lines = full_outline.split('\n')
+                    found_chapter = False
+                    
+                    for line in lines:
+                        line_stripped = line.strip()
                         
+                        # 현재 챕터 찾기
+                        ch_title = ch.split(':')[-1].strip() if ':' in ch else ch
+                        if ch_title[:15] in line_stripped or ch[:15] in line_stripped:
+                            found_chapter = True
+                            continue
+                        
+                        if found_chapter:
+                            # 다음 챕터가 나오면 중단
+                            if (line_stripped.lower().startswith('챕터') or 
+                                line_stripped.lower().startswith('chapter') or
+                                line_stripped.startswith('##') or
+                                (len(line_stripped) > 0 and line_stripped[0].isdigit() and ('.' in line_stripped[:5] or ':' in line_stripped[:5]))):
+                                break
+                            
+                            # 소제목 추출 (-, ·, •로 시작)
+                            if line_stripped.startswith('-') or line_stripped.startswith('·') or line_stripped.startswith('•'):
+                                subtopic = line_stripped.lstrip('-·• ').strip()
+                                if subtopic:
+                                    subtopics.append(subtopic)
+                    
+                    # 챕터 데이터 저장
+                    if ch not in st.session_state['chapters']:
                         st.session_state['chapters'][ch] = {
-                            'subtopics': subtopics,  # 파싱된 소제목 또는 빈 리스트
+                            'subtopics': subtopics,
                             'subtopic_data': {st: {'questions': [], 'answers': [], 'content': ''} for st in subtopics}
                         }
+                    else:
+                        # 기존 데이터에 새 소제목 추가
+                        existing = st.session_state['chapters'][ch].get('subtopics', [])
+                        for st_name in subtopics:
+                            if st_name not in existing:
+                                existing.append(st_name)
+                                st.session_state['chapters'][ch]['subtopic_data'][st_name] = {
+                                    'questions': [], 'answers': [], 'content': ''
+                                }
+                        st.session_state['chapters'][ch]['subtopics'] = existing
+                
                 trigger_auto_save()
                 st.success("저장됨")
         else:
@@ -1706,7 +1842,7 @@ with tabs[3]:
             key="chapter_select"
         )
         
-        # 챕터 데이터 초기화
+        # 챕터 데이터 초기화 (이미 있으면 유지)
         if selected_chapter not in st.session_state['chapters']:
             st.session_state['chapters'][selected_chapter] = {
                 'subtopics': [],
@@ -1721,9 +1857,15 @@ with tabs[3]:
         if 'subtopic_data' not in chapter_data:
             chapter_data['subtopic_data'] = {}
         
+        # 기존 소제목 데이터 초기화 (없는 것만)
         for st_name in chapter_data['subtopics']:
             if st_name not in chapter_data['subtopic_data']:
                 chapter_data['subtopic_data'][st_name] = {'questions': [], 'answers': [], 'content': ''}
+        
+        # 현재 챕터 정보 표시
+        subtopic_count = len(chapter_data['subtopics'])
+        if subtopic_count > 0:
+            st.success(f"📌 이 챕터에 {subtopic_count}개의 소제목이 저장되어 있습니다.")
         
         st.markdown("---")
         
