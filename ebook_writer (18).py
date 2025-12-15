@@ -2237,20 +2237,20 @@ with tabs[3]:
                                 chapter_data['subtopic_data'][st_name] = {'questions': [], 'answers': [], 'content': ''}
                             st.success(f"✅ {len(new_subtopics[:num_subtopics])}개 소제목 생성됨!")
                             st.rerun()
-        
-        with col_add:
-            st.markdown("**직접 입력**")
-            new_subtopic_name = st.text_input(
-                "소제목 이름",
-                placeholder="직접 입력하세요",
-                key="new_subtopic_empty"
-            )
-            if st.button("➕ 소제목 추가", key="add_subtopic_empty"):
-                if new_subtopic_name.strip():
-                    chapter_data['subtopics'].append(new_subtopic_name)
-                    chapter_data['subtopic_data'][new_subtopic_name] = {'questions': [], 'answers': [], 'content': ''}
-                    st.success(f"'{new_subtopic_name}' 추가됨!")
-                    st.rerun()
+            
+            with col_add:
+                st.markdown("**직접 입력**")
+                new_subtopic_name = st.text_input(
+                    "소제목 이름",
+                    placeholder="직접 입력하세요",
+                    key="new_subtopic_empty"
+                )
+                if st.button("➕ 소제목 추가", key="add_subtopic_empty"):
+                    if new_subtopic_name.strip():
+                        chapter_data['subtopics'].append(new_subtopic_name)
+                        chapter_data['subtopic_data'][new_subtopic_name] = {'questions': [], 'answers': [], 'content': ''}
+                        st.success(f"'{new_subtopic_name}' 추가됨!")
+                        st.rerun()
 
     # ====== 본문 작성 탭 하단: 작성된 본문 통합 보기 ======
     st.markdown("---")
