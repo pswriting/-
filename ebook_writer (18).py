@@ -2007,6 +2007,7 @@ with tabs[3]:
                             # 직접 session_state에 저장
                             st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic]['content'] = content
                             trigger_auto_save()
+                            st.rerun()  
                 else:
                     st.info("👈 먼저 인터뷰 질문에 답변해주세요.")
                 
@@ -2161,6 +2162,7 @@ with tabs[3]:
                             )
                             st.session_state['chapters'][selected_chapter]['subtopic_data'][chapter_as_subtopic]['content'] = content
                             trigger_auto_save()
+                            st.rerun()  
                 else:
                     st.info("👈 먼저 인터뷰 질문에 답변해주세요.")
                 
