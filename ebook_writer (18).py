@@ -1638,15 +1638,11 @@ with tabs[2]:
             <div class="info-card">
                 <div class="info-card-title">📌 입력 형식 예시</div>
                 <p><b>1부. [KODE 1] 크몽에서 월 1,000 창출하라</b></p>
-                <p>1) 왕따가 억대 사업가가 될 수 있었던 이유</p>
-                <p>2) 리버스 엔지니어링 4단계</p>
+                <p style="margin-left: 20px;">1) 왕따가 억대 사업가가 될 수 있었던 이유</p>
+                <p style="margin-left: 20px;">2) 리버스 엔지니어링 4단계</p>
                 <p><b>2부. [KODE 2] 선수익 월배당 시스템</b></p>
-                <p>3) 자본주의를 해킹하는 법</p>
-                <p>4) 듀얼 엔진 이론</p>
-                <p style="color: #666; font-size: 0.85em; margin-top: 10px;">
-                    <b>📚 챕터 인식:</b> 1부, 2부, 1장, 2장, 챕터1, 에필로그, 프롤로그<br>
-                    <b>📝 소제목 인식:</b> 1), 2), 3) 또는 -, ·, • 또는 그냥 텍스트
-                </p>
+                <p style="margin-left: 20px;">3) 자본주의를 해킹하는 법</p>
+                <p style="margin-left: 20px;">4) 듀얼 엔진 이론</p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -1680,75 +1676,75 @@ with tabs[2]:
                         if not line or line == '...':
                             continue
                         
-                        # 챕터 판별 함수
-                        def is_chapter_line(text):
-                            text_lower = text.lower()
-                            # 키워드로 시작
-                            if any(text_lower.startswith(kw) for kw in ['챕터', 'chapter', '에필로그', '프롤로그', '서문', '부록']):
-                                return True
-                            # X부. X부: X장. X장: 형태 (1부, 2부, 1장, 2장 등)
-                            if len(text) > 1 and text[0].isdigit():
-                                # 숫자 다음에 부, 장, ., : 가 있는지 확인
-                                rest = text[1:].lstrip('0123456789')  # 2자리 숫자 지원
-                                if rest and (rest[0] in '부장.:'):
-                                    return True
-                            return False
+                        # 챕터 판별: X부., X장., X., 챕터X, 에필로그 등
+                        is_chapter = False
+                        text_lower = line.lower()
                         
-                        # 소제목 판별 함수
-                        def is_subtopic_line(text):
+                        # 키워드로 시작하는 경우
+                        if any(text_lower.startswith(kw) for kw in ['챕터', 'chapter', '에필로그', '프롤로그', '서문', '부록']):
+                            is_chapter = True
+                        # 숫자로 시작하는 경우
+                        elif len(line) > 2 and line[0].isdigit():
+                            # 숫자 부분 추출
+                            num_end = 1
+                            while num_end < len(line) and line[num_end].isdigit():
+                                num_end += 1
+                            rest = line[num_end:]
+                            
+                            if rest:
+                                # "부", "장" 다음에 오면 챕터
+                                if rest[0] in '부장':
+                                    is_chapter = True
+                                # "숫자. " 형태 (점 다음에 공백이나 문자가 오면) - 소제목 아님
+                                elif rest[0] == '.' and len(rest) > 1 and rest[1] != ')':
+                                    is_chapter = True
+                                # "숫자: " 형태
+                                elif rest[0] == ':':
+                                    is_chapter = True
+                        
+                        # 소제목 판별: X), -, ·, • 로 시작
+                        is_subtopic = False
+                        if not is_chapter and current_chapter:
                             # -, ·, • 로 시작
-                            if text[0] in '-·•':
-                                return True
-                            # 숫자) 형태 (1), 2), 10) 등)
-                            if len(text) > 1 and text[0].isdigit():
-                                # 숫자 다음에 )가 있는지 확인
-                                for i, char in enumerate(text):
-                                    if char == ')':
-                                        return True
-                                    if not char.isdigit():
-                                        break
-                            return False
+                            if line[0] in '-·•':
+                                is_subtopic = True
+                            # 숫자) 형태
+                            elif line[0].isdigit():
+                                num_end = 1
+                                while num_end < len(line) and line[num_end].isdigit():
+                                    num_end += 1
+                                if num_end < len(line) and line[num_end] == ')':
+                                    is_subtopic = True
                         
-                        # 챕터인지 확인
-                        if is_chapter_line(line):
+                        # 처리
+                        if is_chapter:
                             current_chapter = line
                             chapters.append(current_chapter)
                             chapter_subtopics[current_chapter] = []
-                        # 소제목인지 확인 (현재 챕터가 있을 때)
                         elif current_chapter:
-                            if is_subtopic_line(line):
-                                # 접두사 제거
-                                subtopic = line.lstrip('-·• ')
+                            # 소제목으로 처리
+                            subtopic = line
+                            # 접두사 제거
+                            if line[0] in '-·•':
+                                subtopic = line.lstrip('-·• ').strip()
+                            elif is_subtopic:
                                 # 숫자) 제거
-                                subtopic = re.sub(r'^\d+\)\s*', '', subtopic)
-                                if subtopic:
-                                    chapter_subtopics[current_chapter].append(subtopic)
-                            else:
-                                # 일반 텍스트도 소제목으로 (챕터 아래에 있으면)
-                                if len(line) > 3:  # 너무 짧은 건 제외
-                                    chapter_subtopics[current_chapter].append(line)
+                                subtopic = re.sub(r'^\d+\)\s*', '', line).strip()
+                            
+                            if subtopic and len(subtopic) > 2:
+                                chapter_subtopics[current_chapter].append(subtopic)
                     
                     # 저장
                     st.session_state['outline'] = chapters
                     st.session_state['full_outline'] = manual_outline
                     
-                    # 챕터별 데이터 생성 (기존 데이터 유지하면서 업데이트)
+                    # 챕터별 데이터 생성
                     for ch in chapters:
                         subtopics = chapter_subtopics.get(ch, [])
-                        if ch not in st.session_state['chapters']:
-                            st.session_state['chapters'][ch] = {
-                                'subtopics': subtopics,
-                                'subtopic_data': {st: {'questions': [], 'answers': [], 'content': ''} for st in subtopics}
-                            }
-                        else:
-                            # 기존 챕터 업데이트 - 소제목 교체
-                            st.session_state['chapters'][ch]['subtopics'] = subtopics
-                            # 새 소제목 데이터 초기화
-                            for st_name in subtopics:
-                                if st_name not in st.session_state['chapters'][ch]['subtopic_data']:
-                                    st.session_state['chapters'][ch]['subtopic_data'][st_name] = {
-                                        'questions': [], 'answers': [], 'content': ''
-                                    }
+                        st.session_state['chapters'][ch] = {
+                            'subtopics': subtopics,
+                            'subtopic_data': {st_name: {'questions': [], 'answers': [], 'content': ''} for st_name in subtopics}
+                        }
                     
                     trigger_auto_save()
                     
