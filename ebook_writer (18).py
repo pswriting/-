@@ -1056,66 +1056,49 @@ def generate_subtopic_content(subtopic_title, chapter_title, questions, answers,
         if a.strip():
             qa_pairs += f"\n질문{i}: {q}\n답변{i}: {a}\n"
     
-    prompt = f"""당신은 자청, 신사임당 수준의 베스트셀러 작가입니다.
-
-[집필 정보]
+    prompt = f"""[집필 정보]
 주제: {topic}
 챕터: {chapter_title}
 소제목: {subtopic_title}
 타겟: {persona}
 
-[작가 인터뷰 - 이 내용만 바탕으로 작성]
+[작가 인터뷰]
 {qa_pairs}
 
-[자청 스타일 글쓰기 - 핵심 원칙]
+[가장 중요한 규칙 - 문단 구성]
+절대로 한 문장마다 줄바꿈하지 마세요.
+반드시 3~5문장을 하나의 문단으로 묶으세요.
+문단과 문단 사이에만 빈 줄을 넣으세요.
 
-1. 첫 문장부터 후킹
-   - 독자가 "뭐지?" 하고 멈추게 만드는 첫 문장
-   - 결론이나 충격적 사실부터 시작
-   
-   나쁜 예: "'크몽'에서 월 1,000만 원의 현금 흐름을 만드는 것은 꿈같은 이야기가 아닙니다."
-   좋은 예: "저는 왕따였습니다. 지금은 월 1,000만 원을 법니다."
+올바른 예시:
+"크몽에서 처음 서비스를 올렸을 때 반응은 처참했다. 3개월 동안 단 한 건의 판매도 없었다. 조회수는 바닥이었고, 문의조차 들어오지 않았다. 당시 직장 월급은 250만 원, 통장 잔고는 47만 원이었다.
 
-2. 문단 구성
-   - 한 문단 2~4문장
-   - 절대 한 문장씩 띄어쓰기 금지
-   - 문단 사이만 빈 줄
+그때 전략을 바꿨다. 가격을 절반으로 내리고, 서비스 설명을 전면 수정했다. 포트폴리오 대신 고객 후기를 전면에 내세웠다. 2주 후 첫 주문이 들어왔다."
 
-3. 비유는 최소화
-   - 비유는 글 전체에서 1~2개만
-   - 억지 비유 금지 ("썩은 웅덩이", "숨겨진 보물" 같은 거 쓰지 마세요)
-   - 비유 대신 구체적 사실과 숫자로 설득
+잘못된 예시 (절대 이렇게 쓰지 마세요):
+"크몽에서 처음 서비스를 올렸다.
 
-4. 팩트와 스토리로 몰입
-   - 구체적인 상황 묘사 (언제, 어디서, 무슨 일이)
-   - 감정보다 행동과 결과 중심
-   - "느꼈습니다" 대신 "했습니다"
-   
-   나쁜 예: "절망감이 밀려왔습니다. 희망이 사라지는 것 같았습니다."
-   좋은 예: "3개월 동안 매출 0원. 저는 서비스 가격을 절반으로 내렸습니다."
+반응은 처참했다.
 
-5. 담백하고 직접적인 톤
-   - 과장 없이 사실 그대로
-   - 독자에게 직접 말하듯
-   - 짧고 힘 있는 문장
+3개월 동안 판매가 없었다."
+
+[글쓰기 스타일]
+- 비유는 글 전체에서 최대 1개만
+- 감정 표현 최소화 (절망, 희망, 꿈 등 쓰지 마세요)
+- 구체적 숫자와 행동 중심
+- 담백하고 직접적인 톤
 
 [절대 금지]
 - 한 문장씩 띄어쓰기
-- 과도한 비유 (글 전체에 2개 이상)
+- 과도한 비유
 - "~같은 이야기가 아닙니다" 같은 뻔한 표현
-- "마치 ~처럼", "~와 같았습니다" 남발
-- 감정 과잉 표현 ("절망", "희망", "꿈")
-- 교훈적 마무리 ("포기하지 마세요")
-- **굵은글씨**, *기울임*
-- 주어 뒤 쉼표
+- 교훈적 마무리
 
 [분량]
-1500~2000자 (반드시 1500자 이상)
+1500~2000자
 
-[미션]
-위 인터뷰 내용을 바탕으로 '{subtopic_title}' 본문을 작성하세요.
-자청처럼 담백하고, 팩트 중심으로, 끝까지 읽게 만드세요."""
-    return ask_ai("베스트셀러 작가", prompt, temperature=0.8)
+위 인터뷰 내용으로 '{subtopic_title}' 본문을 작성하세요. 문단 구성을 반드시 지켜주세요."""
+    return ask_ai("작가", prompt, temperature=0.75)
 
 
 def refine_content(content, style="친근한"):
@@ -2024,7 +2007,6 @@ with tabs[3]:
                             # 직접 session_state에 저장
                             st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic]['content'] = content
                             trigger_auto_save()
-                            st.rerun()
                 else:
                     st.info("👈 먼저 인터뷰 질문에 답변해주세요.")
                 
@@ -2036,16 +2018,18 @@ with tabs[3]:
                     "본문 내용",
                     value=current_content,
                     height=400,
-                    key=f"content_main_{selected_chapter}_{selected_subtopic}",
+                    key=f"content_{selected_subtopic[:20]}",
                     label_visibility="collapsed"
                 )
                 
                 # 편집된 내용 저장
-                if edited_content != current_content:
+                if edited_content and edited_content != current_content:
                     st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic]['content'] = edited_content
                 
-                if current_content:
-                    char_count = len(current_content)
+                # 저장된 내용 다시 확인
+                saved_content = st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic].get('content', '')
+                if saved_content:
+                    char_count = len(saved_content)
                     st.caption(f"📊 {char_count}자")
                     st.success(f"✅ '{selected_subtopic}' 본문 작성 완료!")
         
@@ -2177,7 +2161,6 @@ with tabs[3]:
                             )
                             st.session_state['chapters'][selected_chapter]['subtopic_data'][chapter_as_subtopic]['content'] = content
                             trigger_auto_save()
-                            st.rerun()
                 else:
                     st.info("👈 먼저 인터뷰 질문에 답변해주세요.")
                 
@@ -2187,15 +2170,16 @@ with tabs[3]:
                     "본문 내용",
                     value=current_content,
                     height=400,
-                    key="content_special",
+                    key=f"content_special_{selected_chapter[:15]}",
                     label_visibility="collapsed"
                 )
                 
-                if edited_content != current_content:
+                if edited_content and edited_content != current_content:
                     st.session_state['chapters'][selected_chapter]['subtopic_data'][chapter_as_subtopic]['content'] = edited_content
                 
-                if current_content:
-                    char_count = len(current_content)
+                saved_content = st.session_state['chapters'][selected_chapter]['subtopic_data'].get(chapter_as_subtopic, {}).get('content', '')
+                if saved_content:
+                    char_count = len(saved_content)
                     st.caption(f"📊 {char_count}자")
                     st.success(f"✅ '{selected_chapter}' 본문 작성 완료!")
         
