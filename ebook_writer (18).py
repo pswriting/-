@@ -1433,6 +1433,51 @@ def calculate_char_count(text):
         return 0
     return len(text.replace('\n', '').replace(' ', ''))
 
+def clean_content_for_display(content, subtopic_title=None, chapter_title=None):
+    """본문에서 마크다운 기호와 중복 제목 제거"""
+    if not content:
+        return ""
+    
+    lines = content.split('\n')
+    cleaned_lines = []
+    
+    for line in lines:
+        stripped = line.strip()
+        
+        # 마크다운 헤더 제거 (##, ###)
+        if stripped.startswith('##'):
+            # ## 또는 ### 뒤의 텍스트만 추출
+            text_after = stripped.lstrip('#').strip()
+            # 챕터 제목이나 소제목과 같으면 건너뛰기
+            if chapter_title and text_after in chapter_title:
+                continue
+            if subtopic_title and text_after in subtopic_title:
+                continue
+            # 다른 헤더라면 일반 텍스트로 변환
+            if text_after:
+                cleaned_lines.append(text_after)
+            continue
+        
+        # 소제목과 동일한 줄 건너뛰기 (첫 몇 줄에서만)
+        if subtopic_title and len(cleaned_lines) < 3:
+            if stripped == subtopic_title or stripped.replace('**', '') == subtopic_title:
+                continue
+        
+        cleaned_lines.append(line)
+    
+    return '\n'.join(cleaned_lines)
+
+def escape_html(text):
+    """HTML 특수문자 이스케이프"""
+    if not text:
+        return ""
+    return (text
+            .replace('&', '&amp;')
+            .replace('<', '&lt;')
+            .replace('>', '&gt;')
+            .replace('"', '&quot;')
+            .replace("'", '&#39;'))
+
 def get_all_content_text():
     """모든 챕터의 순수 본문 텍스트만 수집 (목차 순서 보장)"""
     pure_content = ""
@@ -2653,15 +2698,21 @@ with tabs[3]:
                             subtopic_list = [ch]
                         
                         chapter_has_content = False
-                        chapter_html = f'<div class="book-chapter"><div class="book-chapter-title">{ch}</div>'
+                        chapter_html = f'<div class="book-chapter"><div class="book-chapter-title">{escape_html(ch)}</div>'
                         
                         for st_name in subtopic_list:
                             st_data = ch_data['subtopic_data'].get(st_name, {})
                             if st_data.get('content'):
-                                content_text = st_data['content'].replace('\n\n', '</p><p>').replace('\n', '<br>')
+                                # 본문 정제: 마크다운 기호, 중복 제목 제거
+                                raw_content = st_data['content']
+                                cleaned_content = clean_content_for_display(raw_content, st_name, ch)
+                                # HTML 이스케이프 후 줄바꿈 처리
+                                safe_content = escape_html(cleaned_content)
+                                content_text = safe_content.replace('\n\n', '</p><p>').replace('\n', '<br>')
+                                
                                 chapter_html += f'''
                                 <div class="book-subtopic">
-                                    <div class="book-subtopic-title">{st_name}</div>
+                                    <div class="book-subtopic-title">{escape_html(st_name)}</div>
                                     <div class="book-content"><p>{content_text}</p></div>
                                 </div>
                                 '''
@@ -3172,15 +3223,21 @@ with tabs[5]:
                                 subtopic_list = [chapter]
                             
                             chapter_has_content = False
-                            chapter_html = f'<div class="book-chapter-tab6"><div class="book-chapter-title-tab6">{chapter}</div>'
+                            chapter_html = f'<div class="book-chapter-tab6"><div class="book-chapter-title-tab6">{escape_html(chapter)}</div>'
                             
                             for st_name in subtopic_list:
                                 st_data = ch_data['subtopic_data'].get(st_name, {})
                                 if st_data.get('content'):
-                                    content_text = st_data['content'].replace('\n\n', '</p><p>').replace('\n', '<br>')
+                                    # 본문 정제: 마크다운 기호, 중복 제목 제거
+                                    raw_content = st_data['content']
+                                    cleaned_content = clean_content_for_display(raw_content, st_name, chapter)
+                                    # HTML 이스케이프 후 줄바꿈 처리
+                                    safe_content = escape_html(cleaned_content)
+                                    content_text = safe_content.replace('\n\n', '</p><p>').replace('\n', '<br>')
+                                    
                                     chapter_html += f'''
                                     <div class="book-subtopic-tab6">
-                                        <div class="book-subtopic-title-tab6">{st_name}</div>
+                                        <div class="book-subtopic-title-tab6">{escape_html(st_name)}</div>
                                         <div class="book-content-tab6"><p>{content_text}</p></div>
                                     </div>
                                     '''
@@ -3213,7 +3270,9 @@ with tabs[5]:
                                     if not chapter_has_content:
                                         edit_text += f"\n\n{'='*50}\n{chapter}\n{'='*50}\n\n"
                                         chapter_has_content = True
-                                    edit_text += f"[{st_name}]\n\n{st_data['content']}\n\n"
+                                    # 본문 정제
+                                    cleaned = clean_content_for_display(st_data['content'], st_name, chapter)
+                                    edit_text += f"[{st_name}]\n\n{cleaned}\n\n"
                 
                 edited_all = st.text_area(
                     "전체 본문 (편집 가능)",
