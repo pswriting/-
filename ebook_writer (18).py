@@ -1575,7 +1575,11 @@ with tabs[2]:
                                 line.startswith('## 챕터') or
                                 line.startswith('##챕터') or
                                 line.lower().startswith('챕터') or
-                                (len(line) > 0 and line[0].isdigit() and ('.' in line[:5] or ':' in line[:5]))
+                                line.lower().startswith('에필로그') or
+                                line.lower().startswith('프롤로그') or
+                                line.lower().startswith('서문') or
+                                (len(line) > 0 and line[0].isdigit() and 
+                                 ('.' in line[:8] or ':' in line[:8] or '장' in line[:8] or '부' in line[:8]))
                             )
                             
                             # 소제목 판별
@@ -1660,13 +1664,17 @@ with tabs[2]:
                         if not line:
                             continue
                         
-                        # 챕터 판별 (챕터, Chapter, 숫자로 시작, 또는 에필로그/프롤로그)
+                        # 챕터 판별 (챕터, Chapter, 숫자로 시작, 에필로그/프롤로그, X부)
                         is_chapter = (
                             line.lower().startswith('챕터') or 
                             line.lower().startswith('chapter') or
                             line.lower().startswith('에필로그') or
                             line.lower().startswith('프롤로그') or
-                            (len(line) > 0 and line[0].isdigit() and ('.' in line[:5] or ':' in line[:5] or '장' in line[:5]))
+                            line.lower().startswith('서문') or
+                            line.lower().startswith('부록') or
+                            # 숫자로 시작하고 . : 장 부 가 있는 경우
+                            (len(line) > 0 and line[0].isdigit() and 
+                             ('.' in line[:8] or ':' in line[:8] or '장' in line[:8] or '부' in line[:8]))
                         )
                         
                         # 소제목 판별 (-, ·, •로 시작)
@@ -1773,8 +1781,11 @@ with tabs[2]:
                             # 다음 챕터가 나오면 중단
                             if (line_stripped.lower().startswith('챕터') or 
                                 line_stripped.lower().startswith('chapter') or
+                                line_stripped.lower().startswith('에필로그') or
+                                line_stripped.lower().startswith('프롤로그') or
                                 line_stripped.startswith('##') or
-                                (len(line_stripped) > 0 and line_stripped[0].isdigit() and ('.' in line_stripped[:5] or ':' in line_stripped[:5]))):
+                                (len(line_stripped) > 0 and line_stripped[0].isdigit() and 
+                                 ('.' in line_stripped[:8] or ':' in line_stripped[:8] or '장' in line_stripped[:8] or '부' in line_stripped[:8]))):
                                 break
                             
                             # 소제목 추출 (-, ·, •로 시작)
@@ -1813,78 +1824,228 @@ with tabs[2]:
 with tabs[3]:
     st.markdown("## 본문 작성")
     
-    # 목차가 없어도 바로 시작 가능하게
+    # 목차가 없는 경우
     if not st.session_state['outline']:
-        st.info("💡 목차가 없어도 바로 시작 가능! 아래에서 챕터를 추가하세요.")
-        
-        col_quick1, col_quick2 = st.columns([3, 1])
-        with col_quick1:
-            quick_chapter = st.text_input(
-                "새 챕터 추가",
-                placeholder="예: 챕터1: 왜 열심히 하는 사람이 가난할까",
-                key="quick_add_chapter"
-            )
-        with col_quick2:
-            if st.button("추가", key="quick_add_btn"):
-                if quick_chapter.strip():
-                    st.session_state['outline'].append(quick_chapter)
-                    st.session_state['chapters'][quick_chapter] = {
-                        'subtopics': [],
-                        'subtopic_data': {}
-                    }
-                    st.rerun()
+        st.warning("⚠️ 먼저 '③ 목차 설계' 탭에서 목차를 작성해주세요.")
+        st.stop()
     
-    if st.session_state['outline']:
-        # 챕터 선택
-        selected_chapter = st.selectbox(
-            "📚 챕터 선택",
-            st.session_state['outline'],
-            key="chapter_select"
+    # 챕터만 필터링 (소제목 제외)
+    chapter_list = []
+    for item in st.session_state['outline']:
+        # 소제목인지 확인 (-, ·, • 로 시작하면 소제목)
+        item_stripped = item.strip()
+        if not item_stripped.startswith('-') and not item_stripped.startswith('·') and not item_stripped.startswith('•'):
+            chapter_list.append(item)
+    
+    if not chapter_list:
+        st.warning("⚠️ 챕터가 없습니다. 목차를 다시 확인해주세요.")
+        st.stop()
+    
+    # 챕터 선택
+    selected_chapter = st.selectbox(
+        "📚 챕터 선택",
+        chapter_list,
+        key="chapter_select_main"
+    )
+    
+    # 챕터 데이터 초기화
+    if selected_chapter not in st.session_state['chapters']:
+        st.session_state['chapters'][selected_chapter] = {
+            'subtopics': [],
+            'subtopic_data': {}
+        }
+    
+    chapter_data = st.session_state['chapters'][selected_chapter]
+    
+    if 'subtopics' not in chapter_data:
+        chapter_data['subtopics'] = []
+    if 'subtopic_data' not in chapter_data:
+        chapter_data['subtopic_data'] = {}
+    
+    # 기존 소제목 데이터 초기화
+    for st_name in chapter_data['subtopics']:
+        if st_name not in chapter_data['subtopic_data']:
+            chapter_data['subtopic_data'][st_name] = {'questions': [], 'answers': [], 'content': ''}
+    
+    st.markdown("---")
+    
+    # ====== 소제목이 있는 경우: 바로 본문 작업 ======
+    if chapter_data['subtopics']:
+        st.markdown("### ✍️ 소제목 선택 → 본문 작성")
+        
+        # 소제목 선택 (selectbox)
+        selected_subtopic = st.selectbox(
+            "작성할 소제목",
+            chapter_data['subtopics'],
+            key="subtopic_select_main",
+            format_func=lambda x: f"{'✅' if chapter_data['subtopic_data'].get(x, {}).get('content') else '⬜'} {x}"
         )
         
-        # 챕터 데이터 초기화 (이미 있으면 유지)
-        if selected_chapter not in st.session_state['chapters']:
-            st.session_state['chapters'][selected_chapter] = {
-                'subtopics': [],
-                'subtopic_data': {}
-            }
-        
-        chapter_data = st.session_state['chapters'][selected_chapter]
-        
-        # 소제목 리스트 확인 및 초기화
-        if 'subtopics' not in chapter_data:
-            chapter_data['subtopics'] = []
-        if 'subtopic_data' not in chapter_data:
-            chapter_data['subtopic_data'] = {}
-        
-        # 기존 소제목 데이터 초기화 (없는 것만)
-        for st_name in chapter_data['subtopics']:
-            if st_name not in chapter_data['subtopic_data']:
-                chapter_data['subtopic_data'][st_name] = {'questions': [], 'answers': [], 'content': ''}
-        
-        # 현재 챕터 정보 표시
-        subtopic_count = len(chapter_data['subtopics'])
-        if subtopic_count > 0:
-            st.success(f"📌 이 챕터에 {subtopic_count}개의 소제목이 저장되어 있습니다.")
+        # 진행 상황 표시
+        completed = sum(1 for s in chapter_data['subtopics'] if chapter_data['subtopic_data'].get(s, {}).get('content'))
+        total = len(chapter_data['subtopics'])
+        st.progress(completed / total if total > 0 else 0)
+        st.caption(f"진행: {completed}/{total} 완료")
         
         st.markdown("---")
         
-        # ====== 소제목 관리 섹션 (개선됨) ======
-        st.markdown('<p class="section-label">소제목 관리</p>', unsafe_allow_html=True)
-        st.markdown("### 📝 소제목 편집")
+        # 본문 작성 영역
+        if selected_subtopic:
+            if selected_subtopic not in chapter_data['subtopic_data']:
+                chapter_data['subtopic_data'][selected_subtopic] = {'questions': [], 'answers': [], 'content': ''}
+            
+            subtopic_data = chapter_data['subtopic_data'][selected_subtopic]
+            
+            col1, col2 = st.columns([1, 1])
+            
+            with col1:
+                st.markdown('<p class="section-label">Step 01</p>', unsafe_allow_html=True)
+                st.markdown(f"### 🎤 인터뷰: {selected_subtopic}")
+                
+                if st.button("🎤 질문 생성하기", key="gen_questions_main"):
+                    with st.spinner("질문 생성 중..."):
+                        questions_text = generate_interview_questions(
+                            selected_subtopic, 
+                            selected_chapter, 
+                            st.session_state['topic']
+                        )
+                        questions = re.findall(r'Q\d+:\s*(.+)', questions_text)
+                        if not questions:
+                            questions = [q.strip() for q in questions_text.split('\n') if q.strip() and '?' in q][:3]
+                        subtopic_data['questions'] = questions
+                        subtopic_data['answers'] = [''] * len(questions)
+                        st.rerun()
+                
+                if subtopic_data['questions']:
+                    for i, q in enumerate(subtopic_data['questions']):
+                        st.markdown(f"**Q{i+1}.** {q}")
+                        if i >= len(subtopic_data['answers']):
+                            subtopic_data['answers'].append('')
+                        subtopic_data['answers'][i] = st.text_area(
+                            f"A{i+1}",
+                            value=subtopic_data['answers'][i],
+                            key=f"answer_main_{selected_chapter}_{selected_subtopic}_{i}",
+                            height=80,
+                            label_visibility="collapsed"
+                        )
+                else:
+                    st.info("👆 '질문 생성하기' 버튼을 눌러 인터뷰를 시작하세요.")
+            
+            with col2:
+                st.markdown('<p class="section-label">Step 02</p>', unsafe_allow_html=True)
+                st.markdown(f"### 📝 본문: {selected_subtopic}")
+                
+                # 본문 생성 조건 체크
+                has_answers = subtopic_data.get('questions') and any(a.strip() for a in subtopic_data.get('answers', []))
+                
+                if has_answers:
+                    if st.button("✨ 본문 생성하기", key="gen_content_main"):
+                        with st.spinner("현우 작가 스타일로 집필 중..."):
+                            content = generate_subtopic_content(
+                                selected_subtopic,
+                                selected_chapter,
+                                subtopic_data['questions'],
+                                subtopic_data['answers'],
+                                st.session_state['topic'],
+                                st.session_state['target_persona']
+                            )
+                            subtopic_data['content'] = content
+                            trigger_auto_save()
+                            st.rerun()
+                else:
+                    st.info("👈 먼저 인터뷰 질문에 답변해주세요.")
+                
+                # 본문 표시 및 편집
+                subtopic_data['content'] = st.text_area(
+                    "본문 내용",
+                    value=subtopic_data.get('content', ''),
+                    height=400,
+                    key=f"content_main_{selected_chapter}_{selected_subtopic}",
+                    label_visibility="collapsed"
+                )
+                
+                if subtopic_data.get('content'):
+                    char_count = len(subtopic_data['content'])
+                    st.caption(f"📊 {char_count}자")
+                    st.success(f"✅ '{selected_subtopic}' 본문 작성 완료!")
         
-        col_auto_gen, col_manual_add = st.columns(2)
+        # 소제목 편집 (접혀있는 상태)
+        with st.expander("⚙️ 소제목 편집/추가", expanded=False):
+            st.markdown("#### 소제목 관리")
+            
+            col_gen, col_add = st.columns(2)
+            
+            with col_gen:
+                num_subtopics = st.number_input(
+                    "생성할 개수",
+                    min_value=1,
+                    max_value=10,
+                    value=3,
+                    key="num_subtopics_gen_exp"
+                )
+                if st.button("✨ 소제목 자동 생성", key="gen_subtopics_exp"):
+                    with st.spinner("생성 중..."):
+                        subtopics_text = generate_subtopics(
+                            selected_chapter,
+                            st.session_state['topic'],
+                            st.session_state['target_persona'],
+                            num_subtopics
+                        )
+                        new_subtopics = []
+                        for line in subtopics_text.split('\n'):
+                            line = line.strip()
+                            if line and (line[0].isdigit() or line.startswith('-')):
+                                cleaned = re.sub(r'^[\d\.\-\s]+', '', line).strip()
+                                if cleaned:
+                                    new_subtopics.append(cleaned)
+                        
+                        if new_subtopics:
+                            chapter_data['subtopics'] = new_subtopics[:num_subtopics]
+                            for st_name in new_subtopics[:num_subtopics]:
+                                if st_name not in chapter_data['subtopic_data']:
+                                    chapter_data['subtopic_data'][st_name] = {'questions': [], 'answers': [], 'content': ''}
+                            st.success(f"✅ {len(new_subtopics[:num_subtopics])}개 생성됨!")
+                            st.rerun()
+            
+            with col_add:
+                new_name = st.text_input("새 소제목", placeholder="직접 입력", key="new_subtopic_exp")
+                if st.button("➕ 추가", key="add_subtopic_exp"):
+                    if new_name.strip() and new_name not in chapter_data['subtopics']:
+                        chapter_data['subtopics'].append(new_name)
+                        chapter_data['subtopic_data'][new_name] = {'questions': [], 'answers': [], 'content': ''}
+                        st.rerun()
+            
+            # 현재 소제목 목록
+            st.markdown("**현재 소제목:**")
+            for i, st_name in enumerate(chapter_data['subtopics']):
+                col_n, col_del = st.columns([5, 1])
+                with col_n:
+                    st.write(f"{i+1}. {st_name}")
+                with col_del:
+                    if st.button("🗑️", key=f"del_st_exp_{i}"):
+                        chapter_data['subtopics'].remove(st_name)
+                        if st_name in chapter_data['subtopic_data']:
+                            del chapter_data['subtopic_data'][st_name]
+                        st.rerun()
+    
+    # ====== 소제목이 없는 경우: 생성 먼저 ======
+    else:
+        st.warning("⚠️ 이 챕터에 소제목이 없습니다. 아래에서 소제목을 생성하거나 추가해주세요.")
         
-        with col_auto_gen:
-            # 소제목 자동 생성
+        st.markdown("### 📝 소제목 생성")
+        
+        col_gen, col_add = st.columns(2)
+        
+        with col_gen:
+            st.markdown("**자동 생성**")
             num_subtopics = st.number_input(
-                "생성할 소제목 개수",
+                "생성할 개수",
                 min_value=1,
                 max_value=10,
                 value=3,
-                key="num_subtopics_gen"
+                key="num_subtopics_gen_empty"
             )
-            if st.button("✨ 소제목 자동 생성", key="gen_subtopics"):
+            if st.button("✨ 소제목 자동 생성", key="gen_subtopics_empty"):
                 with st.spinner("베스트셀러급 소제목 생성 중..."):
                     subtopics_text = generate_subtopics(
                         selected_chapter,
@@ -1892,7 +2053,6 @@ with tabs[3]:
                         st.session_state['target_persona'],
                         num_subtopics
                     )
-                    # 파싱
                     new_subtopics = []
                     for line in subtopics_text.split('\n'):
                         line = line.strip()
@@ -1902,179 +2062,25 @@ with tabs[3]:
                                 new_subtopics.append(cleaned)
                     
                     if new_subtopics:
-                        # 기존 소제목에 추가 또는 대체
                         chapter_data['subtopics'] = new_subtopics[:num_subtopics]
                         for st_name in new_subtopics[:num_subtopics]:
-                            if st_name not in chapter_data['subtopic_data']:
-                                chapter_data['subtopic_data'][st_name] = {'questions': [], 'answers': [], 'content': ''}
-                        
-                        if 'subtopic_gen_count' not in st.session_state:
-                            st.session_state['subtopic_gen_count'] = 0
-                        st.session_state['subtopic_gen_count'] += 1
-                        
+                            chapter_data['subtopic_data'][st_name] = {'questions': [], 'answers': [], 'content': ''}
                         st.success(f"✅ {len(new_subtopics[:num_subtopics])}개 소제목 생성됨!")
                         st.rerun()
         
-        with col_manual_add:
-            # 수동 소제목 추가
+        with col_add:
+            st.markdown("**직접 입력**")
             new_subtopic_name = st.text_input(
-                "새 소제목 이름",
+                "소제목 이름",
                 placeholder="직접 입력하세요",
-                key="new_subtopic_input"
+                key="new_subtopic_empty"
             )
-            if st.button("➕ 소제목 추가", key="add_subtopic_btn"):
+            if st.button("➕ 소제목 추가", key="add_subtopic_empty"):
                 if new_subtopic_name.strip():
-                    if new_subtopic_name not in chapter_data['subtopics']:
-                        chapter_data['subtopics'].append(new_subtopic_name)
-                        chapter_data['subtopic_data'][new_subtopic_name] = {'questions': [], 'answers': [], 'content': ''}
-                        st.success(f"'{new_subtopic_name}' 추가됨!")
-                        st.rerun()
-                    else:
-                        st.warning("이미 존재하는 소제목입니다.")
-        
-        # 소제목 목록 표시 및 편집
-        if chapter_data['subtopics']:
-            st.markdown("#### 현재 소제목 목록")
-            
-            gen_count = st.session_state.get('subtopic_gen_count', 0)
-            
-            subtopics_to_remove = []
-            edited_subtopics = []
-            
-            for i, st_name in enumerate(chapter_data['subtopics']):
-                col_num, col_name, col_status, col_del = st.columns([0.5, 4, 1, 0.5])
-                
-                with col_num:
-                    st.markdown(f"**{i+1}**")
-                
-                with col_name:
-                    edited_name = st.text_input(
-                        f"소제목 {i+1}",
-                        value=st_name,
-                        key=f"subtopic_edit_{selected_chapter}_{i}_{gen_count}",
-                        label_visibility="collapsed"
-                    )
-                    edited_subtopics.append((st_name, edited_name))
-                
-                with col_status:
-                    st_data = chapter_data['subtopic_data'].get(st_name, {})
-                    if st_data.get('content'):
-                        st.markdown("✅ 완료")
-                    elif st_data.get('questions'):
-                        st.markdown("📝 작성중")
-                    else:
-                        st.markdown("⬜ 대기")
-                
-                with col_del:
-                    if st.button("🗑️", key=f"del_subtopic_{i}_{gen_count}", help="삭제"):
-                        subtopics_to_remove.append(st_name)
-            
-            # 삭제 처리
-            for st_name in subtopics_to_remove:
-                chapter_data['subtopics'].remove(st_name)
-                if st_name in chapter_data['subtopic_data']:
-                    del chapter_data['subtopic_data'][st_name]
-                st.rerun()
-            
-            # 이름 변경 저장
-            if st.button("💾 소제목 변경사항 저장", key="save_subtopic_names"):
-                new_subtopics = []
-                new_subtopic_data = {}
-                
-                for old_name, new_name in edited_subtopics:
-                    if new_name.strip():
-                        new_subtopics.append(new_name)
-                        if old_name in chapter_data['subtopic_data']:
-                            new_subtopic_data[new_name] = chapter_data['subtopic_data'][old_name]
-                        else:
-                            new_subtopic_data[new_name] = {'questions': [], 'answers': [], 'content': ''}
-                
-                chapter_data['subtopics'] = new_subtopics
-                chapter_data['subtopic_data'] = new_subtopic_data
-                st.success("저장됨!")
-                st.rerun()
-        else:
-            st.info("소제목이 없습니다. 자동 생성 또는 직접 추가해주세요.")
-        
-        st.markdown("---")
-        
-        # ====== 소제목별 본문 작성 ======
-        if chapter_data['subtopics']:
-            selected_subtopic = st.selectbox(
-                "✍️ 작성할 소제목 선택",
-                chapter_data['subtopics'],
-                key="subtopic_select"
-            )
-            
-            if selected_subtopic:
-                if selected_subtopic not in chapter_data['subtopic_data']:
-                    chapter_data['subtopic_data'][selected_subtopic] = {'questions': [], 'answers': [], 'content': ''}
-                
-                subtopic_data = chapter_data['subtopic_data'][selected_subtopic]
-                
-                col1, col2 = st.columns([1, 1])
-                
-                with col1:
-                    st.markdown('<p class="section-label">Step 01</p>', unsafe_allow_html=True)
-                    st.markdown(f"### 인터뷰: {selected_subtopic}")
-                    
-                    if st.button("🎤 질문 생성하기", key="gen_questions"):
-                        with st.spinner("생성 중..."):
-                            questions_text = generate_interview_questions(
-                                selected_subtopic, 
-                                selected_chapter, 
-                                st.session_state['topic']
-                            )
-                            questions = re.findall(r'Q\d+:\s*(.+)', questions_text)
-                            if not questions:
-                                questions = [q.strip() for q in questions_text.split('\n') if q.strip() and '?' in q][:3]
-                            subtopic_data['questions'] = questions
-                            subtopic_data['answers'] = [''] * len(questions)
-                    
-                    if subtopic_data['questions']:
-                        for i, q in enumerate(subtopic_data['questions']):
-                            st.markdown(f"**Q{i+1}.** {q}")
-                            if i >= len(subtopic_data['answers']):
-                                subtopic_data['answers'].append('')
-                            subtopic_data['answers'][i] = st.text_area(
-                                f"A{i+1}",
-                                value=subtopic_data['answers'][i],
-                                key=f"answer_{selected_chapter}_{selected_subtopic}_{i}",
-                                height=80,
-                                label_visibility="collapsed"
-                            )
-                
-                with col2:
-                    st.markdown('<p class="section-label">Step 02</p>', unsafe_allow_html=True)
-                    st.markdown(f"### 본문: {selected_subtopic}")
-                    
-                    if st.button("📝 본문 생성하기", key="gen_content"):
-                        if not subtopic_data['questions'] or not any(subtopic_data['answers']):
-                            st.error("질문과 답변을 먼저 작성해주세요.")
-                        else:
-                            with st.spinner("작성 중... (30초~1분)"):
-                                content = generate_subtopic_content(
-                                    selected_subtopic,
-                                    selected_chapter,
-                                    subtopic_data['questions'],
-                                    subtopic_data['answers'],
-                                    st.session_state['topic'],
-                                    st.session_state['target_persona']
-                                )
-                                subtopic_data['content'] = content
-                                trigger_auto_save()
-                    
-                    if subtopic_data.get('content'):
-                        edited_content = st.text_area(
-                            "생성된 본문 (편집 가능)",
-                            value=subtopic_data['content'],
-                            height=400,
-                            key=f"content_{selected_chapter}_{selected_subtopic}"
-                        )
-                        subtopic_data['content'] = edited_content
-                        
-                        char_count = len(edited_content)
-                        st.caption(f"📊 {char_count}자")
+                    chapter_data['subtopics'].append(new_subtopic_name)
+                    chapter_data['subtopic_data'][new_subtopic_name] = {'questions': [], 'answers': [], 'content': ''}
+                    st.success(f"'{new_subtopic_name}' 추가됨!")
+                    st.rerun()
 
 # === TAB 5: 문체 다듬기 ===
 with tabs[4]:
