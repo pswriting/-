@@ -775,8 +775,27 @@ def get_auto_save_data():
         'saved_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
 
+def sync_full_outline():
+    """현재 session_state의 outline과 chapters를 기반으로 full_outline 재생성"""
+    if not st.session_state.get('outline'):
+        return
+    
+    new_full_outline = ""
+    for ch in st.session_state['outline']:
+        new_full_outline += f"## {ch}\n"
+        if ch in st.session_state.get('chapters', {}):
+            for st_name in st.session_state['chapters'][ch].get('subtopics', []):
+                new_full_outline += f"- {st_name}\n"
+        new_full_outline += "\n"
+    
+    st.session_state['full_outline'] = new_full_outline.strip()
+    # full_outline_display 위젯도 동기화
+    if 'full_outline_display' in st.session_state:
+        st.session_state['full_outline_display'] = st.session_state['full_outline']
+
 def trigger_auto_save():
-    """자동 저장 트리거 - 세션에 플래그 설정"""
+    """자동 저장 트리거 - 세션에 플래그 설정 + 목차 동기화"""
+    sync_full_outline()  # 목차 변경 시 full_outline 동기화
     st.session_state['auto_save_trigger'] = True
 
 def ask_ai(system_role, prompt, temperature=0.7):
@@ -920,108 +939,127 @@ def generate_outline(topic, persona, pain_points):
 위 주제로 정확히 4개 챕터 목차를 설계해주세요.
 각 챕터당 3개 소제목입니다. (총 4챕터 × 3소제목 = 12개)
 
-[프드프 베스트셀러 스타일 - 극도로 자극적]
-클릭하지 않으면 손해라는 느낌을 줘야 합니다.
+[중요: 글자 수 제한]
+- 챕터 제목: 15자 이내
+- 소제목: 12자 이내
 
-챕터 제목 스타일 (충격+호기심):
-- "나는 ○○○○로 인생을 바꿨다"
-- "99%가 모르는 '○○○' 비밀 공개"
-- "당신이 평생 가난한 진짜 이유"
-- "이것 모르면 평생 호구로 산다"
+[스타일 - 짧고 강렬하게]
+좋은 예:
+- "3년 안에 10억 만들기"
+- "월급의 배신"
+- "99%의 착각"
+- "부자의 3가지 습관"
+- "○○○만 알면 끝"
 
-소제목 스타일 (클릭 유발):
-- "월급쟁이는 절대 부자가 될 수 없다"
-- "3개월 만에 월 500 찍은 실제 방법"
-- "직장인 80%가 당하는 '○○○ 함정'"
-- "이걸 알았으면 5년 안 버렸다"
-- "부자들이 숨기는 '3단계 공식'"
-- "1시간 만에 100만 원 번 썰"
-- "당신의 노력이 쓸모없는 이유"
-- "나를 바꾼 단 한 문장"
-- "○○ VS ○○: 결과는 충격적이었다"
+나쁜 예 (절대 금지):
+- "5천만원으로 5년 안에 5억 만드는 마법? 은행은 절대 알려주지 않는 '이것'"
+- 문장이 길거나 ":" 뒤에 또 설명이 붙는 것
 
-[필수 규칙]
-1. 숫자 필수 (3개월, 500만원, 80%, 1시간)
-2. 도발적 단정문 ("~는 사기다", "절대 ~할 수 없다")
-3. 비밀/공식 ("숨기는", "비밀", "공식")
-4. 빈칸 호기심 (○○○, '이것')
-5. VS 비교 대조
-6. 감정 자극 (충격, 후회, 분노)
+[규칙]
+- 숫자 1개만 (3년, 500만원, 99%)
+- 짧을수록 좋음
+- ":" 사용 금지
+- 호기심만 자극
 
 [감정선 흐름]
-챕터1: 현실 각성 (이대로면 망한다)
-챕터2: 문제의 본질 (왜 안 되는가)  
-챕터3: 해결책 공개 (비밀 법칙)
-챕터4: 실전 + 비전 (따라하면 된다)
+챕터1: 현실 각성
+챕터2: 문제의 본질
+챕터3: 비밀 공개
+챕터4: 실전 + 비전
 
 출력 형식 (정확히 이 형식만):
 
-## 챕터1: [충격적 제목]
-- [자극적 소제목1]
-- [자극적 소제목2]  
-- [자극적 소제목3]
+## 챕터1: [15자 이내]
+- [12자 이내]
+- [12자 이내]  
+- [12자 이내]
 
-## 챕터2: [문제 제기형 제목]
-- [자극적 소제목1]
-- [자극적 소제목2]
-- [자극적 소제목3]
+## 챕터2: [15자 이내]
+- [12자 이내]
+- [12자 이내]
+- [12자 이내]
 
-## 챕터3: [비밀 공개형 제목]
-- [자극적 소제목1]
-- [자극적 소제목2]
-- [자극적 소제목3]
+## 챕터3: [15자 이내]
+- [12자 이내]
+- [12자 이내]
+- [12자 이내]
 
-## 챕터4: [실전 + 비전 제목]
-- [자극적 소제목1]
-- [자극적 소제목2]
-- [자극적 소제목3]"""
+## 챕터4: [15자 이내]
+- [12자 이내]
+- [12자 이내]
+- [12자 이내]"""
     return ask_ai("출판기획자", prompt, temperature=0.9)
 
 def regenerate_chapter_outline(chapter_number, topic, persona, existing_chapters):
-    """특정 챕터만 재생성"""
+    """특정 챕터만 재생성 - 짧고 강렬하게"""
     prompt = f"""주제: {topic}
-타겟: {persona}
 
-기존 챕터 구성:
-{chr(10).join([f'- {ch}' for ch in existing_chapters])}
+{chapter_number}번째 챕터를 새로 만들어주세요.
 
-위에서 {chapter_number}번째 챕터만 새롭게 만들어주세요.
-기존 다른 챕터들과 겹치지 않으면서 더 자극적으로!
+[중요: 글자 수 제한]
+- 챕터 제목: 15자 이내
+- 소제목: 각 12자 이내
 
-[필수 규칙]
-- 클릭하고 싶게 만드는 제목
-- 숫자 필수 (금액, 기간, 퍼센트)
-- 도발적 ("~는 거짓말", "절대 ~할 수 없다")
-- 빈칸 호기심 (○○○, '이것')
+[스타일 - 짧고 강렬하게]
+좋은 예:
+- "3년 안에 10억 만들기"
+- "월급의 배신"
+- "부자들의 3가지 비밀"
+- "○○○의 함정"
+- "99%가 모르는 진실"
 
-출력 형식 (이것만):
-## 챕터{chapter_number}: [새로운 제목]
-- [소제목1]
-- [소제목2]
-- [소제목3]"""
-    return ask_ai("출판기획자", prompt, temperature=0.95)
+나쁜 예 (너무 김):
+- "5천만원으로 5년 안에 5억 만드는 마법? 은행은 절대 알려주지 않는 '이것'"
+
+[규칙]
+- 숫자 1개만 사용
+- 짧을수록 좋음
+- 호기심만 자극
+
+출력 (정확히 이 형식만):
+## 챕터{chapter_number}: [15자 이내 제목]
+- [12자 이내 소제목]
+- [12자 이내 소제목]
+- [12자 이내 소제목]"""
+    return ask_ai("출판기획자", prompt, temperature=0.9)
 
 def regenerate_single_subtopic(chapter_title, subtopic_index, topic, existing_subtopics):
-    """특정 소제목만 재생성"""
+    """특정 소제목만 재생성 - 짧고 강렬하게"""
     prompt = f"""주제: {topic}
 챕터: {chapter_title}
 
-기존 소제목들:
-{chr(10).join([f'{i+1}. {st}' for i, st in enumerate(existing_subtopics)])}
+{subtopic_index}번 소제목을 새로 만들어주세요.
 
-위에서 {subtopic_index}번 소제목만 새롭게 만들어주세요.
-다른 소제목들과 겹치지 않으면서 더 자극적으로!
+[중요: 12자 이내로 작성]
 
-[필수]
-- 클릭 욕구 자극
-- 숫자/금액 포함
-- 도발적 단정문 또는 비밀 공개 형태
+좋은 예:
+- "월급의 배신"
+- "3년 vs 30년"
+- "부자의 아침 루틴"
+- "○○○ 하나면 끝"
+- "99%의 착각"
 
-출력 (이것만, 번호 없이):
-[새로운 소제목]"""
-    result = ask_ai("출판기획자", prompt, temperature=0.95)
+나쁜 예 (너무 김):
+- "월급만으로는 절대 부자 될 수 없다: 99%가 모르는 충격적인 진실"
+
+[규칙]
+- 12자 이내 필수
+- 숫자 하나
+- 짧고 강렬하게
+- ":" 사용 금지
+
+출력 (소제목만, 번호 없이, 12자 이내):
+[소제목]"""
+    result = ask_ai("출판기획자", prompt, temperature=0.9)
     # 결과 정제
     result = result.strip().strip('[]').strip('-').strip()
+    # 너무 길면 자르기
+    if len(result) > 25:
+        # 첫 번째 문장부호에서 자르기
+        for sep in [':', '?', '!', ',']:
+            if sep in result:
+                result = result.split(sep)[0].strip()
+                break
     return result
 
 def generate_subtopics(chapter_title, topic, persona, num_subtopics=3):
@@ -1971,6 +2009,10 @@ with tabs[2]:
                                                     st.session_state['chapters'][chapter]['subtopic_data'][new_st_title] = st.session_state['chapters'][chapter]['subtopic_data'].pop(old_st)
                                                 else:
                                                     st.session_state['chapters'][chapter]['subtopic_data'][new_st_title] = {'questions': [], 'answers': [], 'content': ''}
+                                                # 위젯 상태도 업데이트
+                                                widget_key = f"edit_st_{i}_{j}"
+                                                if widget_key in st.session_state:
+                                                    st.session_state[widget_key] = new_st_title
                                                 trigger_auto_save()
                                                 st.rerun()
                                 with col_st_del:
@@ -2112,6 +2154,10 @@ with tabs[3]:
                                     chapter_data['subtopic_data'][new_title] = chapter_data['subtopic_data'].pop(old_st)
                                 else:
                                     chapter_data['subtopic_data'][new_title] = {'questions': [], 'answers': [], 'content': ''}
+                                # 위젯 상태도 업데이트
+                                widget_key = f"view_st_tab4_{j}"
+                                if widget_key in st.session_state:
+                                    st.session_state[widget_key] = new_title
                                 trigger_auto_save()
                                 st.rerun()
             
