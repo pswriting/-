@@ -1124,7 +1124,7 @@ def generate_subtopic_content(subtopic_title, chapter_title, questions, answers,
 - 뻔한 비유, 진부한 격언, 교훈적 마무리
 
 [분량]
-1200~1800자
+1300~2000자 (반드시 1300자 이상)
 
 [미션]
 위 인터뷰 내용만을 바탕으로 '{subtopic_title}' 본문을 작성하세요.
@@ -2026,7 +2026,7 @@ with tabs[3]:
                 
                 if has_answers:
                     if st.button("✨ 본문 생성하기", key="gen_content_main"):
-                        with st.spinner("현우 작가 스타일로 집필 중..."):
+                        with st.spinner("집필 중... (30초~1분)"):
                             content = generate_subtopic_content(
                                 selected_subtopic,
                                 selected_chapter,
@@ -2035,23 +2035,31 @@ with tabs[3]:
                                 st.session_state['topic'],
                                 st.session_state['target_persona']
                             )
-                            subtopic_data['content'] = content
+                            # 직접 session_state에 저장
+                            st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic]['content'] = content
                             trigger_auto_save()
                             st.rerun()
                 else:
                     st.info("👈 먼저 인터뷰 질문에 답변해주세요.")
                 
+                # 현재 저장된 본문 가져오기
+                current_content = st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic].get('content', '')
+                
                 # 본문 표시 및 편집
-                subtopic_data['content'] = st.text_area(
+                edited_content = st.text_area(
                     "본문 내용",
-                    value=subtopic_data.get('content', ''),
+                    value=current_content,
                     height=400,
                     key=f"content_main_{selected_chapter}_{selected_subtopic}",
                     label_visibility="collapsed"
                 )
                 
-                if subtopic_data.get('content'):
-                    char_count = len(subtopic_data['content'])
+                # 편집된 내용 저장
+                if edited_content != current_content:
+                    st.session_state['chapters'][selected_chapter]['subtopic_data'][selected_subtopic]['content'] = edited_content
+                
+                if current_content:
+                    char_count = len(current_content)
                     st.caption(f"📊 {char_count}자")
                     st.success(f"✅ '{selected_subtopic}' 본문 작성 완료!")
         
@@ -2167,6 +2175,37 @@ with tabs[3]:
                     chapter_data['subtopic_data'][new_subtopic_name] = {'questions': [], 'answers': [], 'content': ''}
                     st.success(f"'{new_subtopic_name}' 추가됨!")
                     st.rerun()
+
+    # ====== 본문 작성 탭 하단: 작성된 본문 통합 보기 ======
+    st.markdown("---")
+    st.markdown("### 📖 작성된 본문 통합 보기")
+    
+    # 전체 본문 수집
+    all_content_tab4 = ""
+    content_count_tab4 = 0
+    
+    for ch in st.session_state['outline']:
+        if ch in st.session_state['chapters']:
+            ch_data = st.session_state['chapters'][ch]
+            if 'subtopic_data' in ch_data:
+                chapter_content = ""
+                for st_name in ch_data.get('subtopics', []):
+                    st_data = ch_data['subtopic_data'].get(st_name, {})
+                    if st_data.get('content'):
+                        chapter_content += f"\n### {st_name}\n\n{st_data['content']}\n\n"
+                        content_count_tab4 += 1
+                
+                if chapter_content:
+                    all_content_tab4 += f"\n## {ch}\n{chapter_content}"
+    
+    if all_content_tab4:
+        total_chars_tab4 = len(all_content_tab4.replace('\n', '').replace(' ', ''))
+        st.success(f"✅ 총 {content_count_tab4}개 소제목 작성 완료 | {total_chars_tab4:,}자")
+        
+        with st.expander("📖 전체 본문 펼쳐보기", expanded=False):
+            st.markdown(all_content_tab4)
+    else:
+        st.info("💡 아직 작성된 본문이 없습니다. 위에서 소제목을 선택하고 본문을 작성해주세요.")
 
 # === TAB 5: 문체 다듬기 ===
 with tabs[4]:
