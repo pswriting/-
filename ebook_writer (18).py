@@ -1056,7 +1056,7 @@ def generate_subtopic_content(subtopic_title, chapter_title, questions, answers,
         if a.strip():
             qa_pairs += f"\n질문{i}: {q}\n답변{i}: {a}\n"
     
-    prompt = f"""당신은 베스트셀러 전자책 작가입니다.
+    prompt = f"""당신은 자청, 신사임당 수준의 베스트셀러 작가입니다.
 
 [집필 정보]
 주제: {topic}
@@ -1064,72 +1064,58 @@ def generate_subtopic_content(subtopic_title, chapter_title, questions, answers,
 소제목: {subtopic_title}
 타겟: {persona}
 
-[작가 인터뷰 - 이 내용을 바탕으로 작성]
+[작가 인터뷰 - 이 내용만 바탕으로 작성]
 {qa_pairs}
 
-[글쓰기 스타일 규칙 - 반드시 준수]
+[자청 스타일 글쓰기 - 핵심 원칙]
 
-1. 문단 구성 (가장 중요!)
-   - 한 문단은 반드시 2~4문장으로 구성
-   - 절대로 한 문장만 띄어쓰기 하지 마세요
-   - 문단과 문단 사이만 빈 줄로 구분
+1. 첫 문장부터 후킹
+   - 독자가 "뭐지?" 하고 멈추게 만드는 첫 문장
+   - 결론이나 충격적 사실부터 시작
    
-   [올바른 예시]
-   "많은 사람들이 리버스 엔지니어링을 겉핥기 수준으로만 이해합니다. 성공적인 현금 흐름을 창출하지 못하는 이유죠. 그들이 간과하는 가장 중요한 디테일은 바로 '끈기'입니다.
-   
-   단순히 따라 하는 것을 넘어, 끊임없이 분석하고 개선해야 합니다. 모방은 창조의 어머니라는 말처럼, 꾸준한 노력이 필요합니다."
-   
-   [잘못된 예시 - 절대 하지 마세요]
-   "많은 사람들이 리버스 엔지니어링을 겉핥기 수준으로만 이해합니다.
-   
-   성공적인 현금 흐름을 창출하지 못하는 이유죠.
-   
-   그들이 간과하는 것은 끈기입니다."
+   나쁜 예: "'크몽'에서 월 1,000만 원의 현금 흐름을 만드는 것은 꿈같은 이야기가 아닙니다."
+   좋은 예: "저는 왕따였습니다. 지금은 월 1,000만 원을 법니다."
 
-2. 비유와 표현 수준
-   - 뻔한 비유 금지: "숨겨진 보물", "마법처럼", "날개를 달다" 같은 진부한 표현 쓰지 마세요
-   - 구체적이고 날카로운 비유 사용
-   - 독자가 "와, 이렇게 표현하네"라고 느낄 만큼 신선하게
+2. 문단 구성
+   - 한 문단 2~4문장
+   - 절대 한 문장씩 띄어쓰기 금지
+   - 문단 사이만 빈 줄
+
+3. 비유는 최소화
+   - 비유는 글 전체에서 1~2개만
+   - 억지 비유 금지 ("썩은 웅덩이", "숨겨진 보물" 같은 거 쓰지 마세요)
+   - 비유 대신 구체적 사실과 숫자로 설득
+
+4. 팩트와 스토리로 몰입
+   - 구체적인 상황 묘사 (언제, 어디서, 무슨 일이)
+   - 감정보다 행동과 결과 중심
+   - "느꼈습니다" 대신 "했습니다"
    
-   [뻔한 비유 - 쓰지 마세요]
-   "성공은 당신 바로 앞에 있습니다"
-   "마치 숨겨진 보물 지도와 같았습니다"
-   "포기하지 마십시오"
-   
-   [좋은 비유 예시]
-   "월급은 산소호흡기입니다. 끊으면 죽습니다."
-   "대부분 사람들은 1층에서 엘리베이터를 기다립니다. 이미 버튼이 고장났는데."
-   "99%는 정답을 찾습니다. 1%는 문제를 바꿉니다."
+   나쁜 예: "절망감이 밀려왔습니다. 희망이 사라지는 것 같았습니다."
+   좋은 예: "3개월 동안 매출 0원. 저는 서비스 가격을 절반으로 내렸습니다."
 
-3. 숫자와 팩트
-   - 구체적 숫자 필수 (52.3%, 2조원, 300% 증가)
-   - 가능하면 출처 언급
-
-4. 톤앤매너
-   - 자신감 있는 단정 ("~입니다")
-   - 독자에게 직접 말하듯 ("여러분은", "당신이")
-   - 핵심 문장은 짧게 독립 (단, 이것도 2-3문장 문단 안에서)
-
-5. 흐름 구조
-   - 문제 제기 → 공감 → 해결책 → 구체적 방법 → 결론
-   - 섹션 전환 시 "---" 사용 (하지만 남발 금지, 2-3번만)
+5. 담백하고 직접적인 톤
+   - 과장 없이 사실 그대로
+   - 독자에게 직접 말하듯
+   - 짧고 힘 있는 문장
 
 [절대 금지]
-- 한 문장씩 띄어쓰기 (가장 중요!)
-- 주어 뒤 쉼표 (저는, 그때 → 저는 그때)
-- **굵은글씨**, *기울임* 마크다운
-- "따라서", "그러므로", "이처럼" 과다 사용
-- 번호 목록, 불릿 포인트
-- "~라고 할 수 있습니다" 같은 애매한 표현
-- 뻔한 비유, 진부한 격언, 교훈적 마무리
+- 한 문장씩 띄어쓰기
+- 과도한 비유 (글 전체에 2개 이상)
+- "~같은 이야기가 아닙니다" 같은 뻔한 표현
+- "마치 ~처럼", "~와 같았습니다" 남발
+- 감정 과잉 표현 ("절망", "희망", "꿈")
+- 교훈적 마무리 ("포기하지 마세요")
+- **굵은글씨**, *기울임*
+- 주어 뒤 쉼표
 
 [분량]
-1300~2000자 (반드시 1300자 이상)
+1500~2000자 (반드시 1500자 이상)
 
 [미션]
-위 인터뷰 내용만을 바탕으로 '{subtopic_title}' 본문을 작성하세요.
-문단은 2-4문장씩 묶고, 신선한 비유로, 읽는 재미가 있게 써주세요."""
-    return ask_ai("베스트셀러 작가", prompt, temperature=0.85)
+위 인터뷰 내용을 바탕으로 '{subtopic_title}' 본문을 작성하세요.
+자청처럼 담백하고, 팩트 중심으로, 끝까지 읽게 만드세요."""
+    return ask_ai("베스트셀러 작가", prompt, temperature=0.8)
 
 
 def refine_content(content, style="친근한"):
@@ -2122,45 +2108,135 @@ with tabs[3]:
                             del chapter_data['subtopic_data'][st_name]
                         st.rerun()
     
-    # ====== 소제목이 없는 경우: 생성 먼저 ======
+    # ====== 소제목이 없는 경우 (에필로그/프롤로그 등): 바로 본문 작성 ======
     else:
-        st.warning("⚠️ 이 챕터에 소제목이 없습니다. 아래에서 소제목을 생성하거나 추가해주세요.")
+        # 에필로그, 프롤로그 등인지 확인
+        is_special_chapter = any(kw in selected_chapter.lower() for kw in ['에필로그', '프롤로그', '서문', '부록', 'epilogue', 'prologue'])
         
-        st.markdown("### 📝 소제목 생성")
-        
-        col_gen, col_add = st.columns(2)
-        
-        with col_gen:
-            st.markdown("**자동 생성**")
-            num_subtopics = st.number_input(
-                "생성할 개수",
-                min_value=1,
-                max_value=10,
-                value=3,
-                key="num_subtopics_gen_empty"
-            )
-            if st.button("✨ 소제목 자동 생성", key="gen_subtopics_empty"):
-                with st.spinner("베스트셀러급 소제목 생성 중..."):
-                    subtopics_text = generate_subtopics(
-                        selected_chapter,
-                        st.session_state['topic'],
-                        st.session_state['target_persona'],
-                        num_subtopics
-                    )
-                    new_subtopics = []
-                    for line in subtopics_text.split('\n'):
-                        line = line.strip()
-                        if line and (line[0].isdigit() or line.startswith('-')):
-                            cleaned = re.sub(r'^[\d\.\-\s]+', '', line).strip()
-                            if cleaned:
-                                new_subtopics.append(cleaned)
-                    
-                    if new_subtopics:
-                        chapter_data['subtopics'] = new_subtopics[:num_subtopics]
-                        for st_name in new_subtopics[:num_subtopics]:
-                            chapter_data['subtopic_data'][st_name] = {'questions': [], 'answers': [], 'content': ''}
-                        st.success(f"✅ {len(new_subtopics[:num_subtopics])}개 소제목 생성됨!")
+        if is_special_chapter:
+            st.info(f"📝 '{selected_chapter}'는 소제목 없이 바로 본문을 작성합니다.")
+            
+            # 챕터 자체를 소제목처럼 사용
+            chapter_as_subtopic = selected_chapter
+            if chapter_as_subtopic not in chapter_data['subtopic_data']:
+                chapter_data['subtopic_data'][chapter_as_subtopic] = {'questions': [], 'answers': [], 'content': ''}
+            
+            subtopic_data = chapter_data['subtopic_data'][chapter_as_subtopic]
+            
+            col1, col2 = st.columns([1, 1])
+            
+            with col1:
+                st.markdown('<p class="section-label">Step 01</p>', unsafe_allow_html=True)
+                st.markdown(f"### 🎤 인터뷰: {selected_chapter}")
+                
+                if st.button("🎤 질문 생성하기", key="gen_questions_special"):
+                    with st.spinner("질문 생성 중..."):
+                        questions_text = generate_interview_questions(
+                            selected_chapter, 
+                            selected_chapter, 
+                            st.session_state['topic']
+                        )
+                        questions = re.findall(r'Q\d+:\s*(.+)', questions_text)
+                        if not questions:
+                            questions = [q.strip() for q in questions_text.split('\n') if q.strip() and '?' in q][:3]
+                        subtopic_data['questions'] = questions
+                        subtopic_data['answers'] = [''] * len(questions)
                         st.rerun()
+                
+                if subtopic_data['questions']:
+                    for i, q in enumerate(subtopic_data['questions']):
+                        st.markdown(f"**Q{i+1}.** {q}")
+                        if i >= len(subtopic_data['answers']):
+                            subtopic_data['answers'].append('')
+                        subtopic_data['answers'][i] = st.text_area(
+                            f"A{i+1}",
+                            value=subtopic_data['answers'][i],
+                            key=f"answer_special_{i}",
+                            height=80,
+                            label_visibility="collapsed"
+                        )
+                else:
+                    st.info("👆 '질문 생성하기' 버튼을 눌러 인터뷰를 시작하세요.")
+            
+            with col2:
+                st.markdown('<p class="section-label">Step 02</p>', unsafe_allow_html=True)
+                st.markdown(f"### 📝 본문: {selected_chapter}")
+                
+                has_answers = subtopic_data.get('questions') and any(a.strip() for a in subtopic_data.get('answers', []))
+                
+                if has_answers:
+                    if st.button("✨ 본문 생성하기", key="gen_content_special"):
+                        with st.spinner("집필 중... (30초~1분)"):
+                            content = generate_subtopic_content(
+                                selected_chapter,
+                                selected_chapter,
+                                subtopic_data['questions'],
+                                subtopic_data['answers'],
+                                st.session_state['topic'],
+                                st.session_state['target_persona']
+                            )
+                            st.session_state['chapters'][selected_chapter]['subtopic_data'][chapter_as_subtopic]['content'] = content
+                            trigger_auto_save()
+                            st.rerun()
+                else:
+                    st.info("👈 먼저 인터뷰 질문에 답변해주세요.")
+                
+                current_content = st.session_state['chapters'][selected_chapter]['subtopic_data'].get(chapter_as_subtopic, {}).get('content', '')
+                
+                edited_content = st.text_area(
+                    "본문 내용",
+                    value=current_content,
+                    height=400,
+                    key="content_special",
+                    label_visibility="collapsed"
+                )
+                
+                if edited_content != current_content:
+                    st.session_state['chapters'][selected_chapter]['subtopic_data'][chapter_as_subtopic]['content'] = edited_content
+                
+                if current_content:
+                    char_count = len(current_content)
+                    st.caption(f"📊 {char_count}자")
+                    st.success(f"✅ '{selected_chapter}' 본문 작성 완료!")
+        
+        else:
+            st.warning("⚠️ 이 챕터에 소제목이 없습니다. 아래에서 소제목을 생성하거나 추가해주세요.")
+            
+            st.markdown("### 📝 소제목 생성")
+            
+            col_gen, col_add = st.columns(2)
+            
+            with col_gen:
+                st.markdown("**자동 생성**")
+                num_subtopics = st.number_input(
+                    "생성할 개수",
+                    min_value=1,
+                    max_value=10,
+                    value=3,
+                    key="num_subtopics_gen_empty"
+                )
+                if st.button("✨ 소제목 자동 생성", key="gen_subtopics_empty"):
+                    with st.spinner("베스트셀러급 소제목 생성 중..."):
+                        subtopics_text = generate_subtopics(
+                            selected_chapter,
+                            st.session_state['topic'],
+                            st.session_state['target_persona'],
+                            num_subtopics
+                        )
+                        new_subtopics = []
+                        for line in subtopics_text.split('\n'):
+                            line = line.strip()
+                            if line and (line[0].isdigit() or line.startswith('-')):
+                                cleaned = re.sub(r'^[\d\.\-\s]+', '', line).strip()
+                                if cleaned:
+                                    new_subtopics.append(cleaned)
+                        
+                        if new_subtopics:
+                            chapter_data['subtopics'] = new_subtopics[:num_subtopics]
+                            for st_name in new_subtopics[:num_subtopics]:
+                                chapter_data['subtopic_data'][st_name] = {'questions': [], 'answers': [], 'content': ''}
+                            st.success(f"✅ {len(new_subtopics[:num_subtopics])}개 소제목 생성됨!")
+                            st.rerun()
         
         with col_add:
             st.markdown("**직접 입력**")
@@ -2180,30 +2256,42 @@ with tabs[3]:
     st.markdown("---")
     st.markdown("### 📖 작성된 본문 통합 보기")
     
-    # 전체 본문 수집
-    all_content_tab4 = ""
+    # 전체 본문 수집 (표시용)
+    all_content_display = ""
+    # 순수 본문만 (글자 수 계산용)
+    pure_content = ""
     content_count_tab4 = 0
     
     for ch in st.session_state['outline']:
         if ch in st.session_state['chapters']:
             ch_data = st.session_state['chapters'][ch]
             if 'subtopic_data' in ch_data:
-                chapter_content = ""
-                for st_name in ch_data.get('subtopics', []):
+                chapter_content_display = ""
+                
+                # 소제목이 있는 경우
+                subtopic_list = ch_data.get('subtopics', [])
+                # 에필로그 등 소제목 없이 챕터 자체가 키인 경우도 포함
+                if not subtopic_list and ch in ch_data['subtopic_data']:
+                    subtopic_list = [ch]
+                
+                for st_name in subtopic_list:
                     st_data = ch_data['subtopic_data'].get(st_name, {})
                     if st_data.get('content'):
-                        chapter_content += f"\n### {st_name}\n\n{st_data['content']}\n\n"
+                        content_text = st_data['content']
+                        pure_content += content_text
+                        chapter_content_display += f"\n### {st_name}\n\n{content_text}\n\n"
                         content_count_tab4 += 1
                 
-                if chapter_content:
-                    all_content_tab4 += f"\n## {ch}\n{chapter_content}"
+                if chapter_content_display:
+                    all_content_display += f"\n## {ch}\n{chapter_content_display}"
     
-    if all_content_tab4:
-        total_chars_tab4 = len(all_content_tab4.replace('\n', '').replace(' ', ''))
+    if pure_content:
+        # 순수 본문만으로 글자 수 계산 (공백, 줄바꿈 제외)
+        total_chars_tab4 = len(pure_content.replace('\n', '').replace(' ', ''))
         st.success(f"✅ 총 {content_count_tab4}개 소제목 작성 완료 | {total_chars_tab4:,}자")
         
         with st.expander("📖 전체 본문 펼쳐보기", expanded=False):
-            st.markdown(all_content_tab4)
+            st.markdown(all_content_display)
     else:
         st.info("💡 아직 작성된 본문이 없습니다. 위에서 소제목을 선택하고 본문을 작성해주세요.")
 
