@@ -26,10 +26,15 @@ st.markdown("""
     }
     
     /* 기본 요소 숨김 */
-    header {visibility: hidden;} 
     .stDeployButton {display:none;} 
     footer {visibility: hidden;}
     #MainMenu {visibility: hidden;}
+    
+    /* 사이드바 토글 버튼 표시 */
+    [data-testid="collapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+    }
     
     /* 메인 배경 - 순수 화이트 */
     .stApp {
