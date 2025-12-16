@@ -1440,32 +1440,59 @@ def clean_content_for_display(content, subtopic_title=None, chapter_title=None):
     
     lines = content.split('\n')
     cleaned_lines = []
+    skip_count = 0  # 처음 몇 줄은 제목 관련일 가능성이 높음
     
-    for line in lines:
+    for idx, line in enumerate(lines):
         stripped = line.strip()
         
-        # 마크다운 헤더 제거 (##, ###)
-        if stripped.startswith('##'):
-            # ## 또는 ### 뒤의 텍스트만 추출
-            text_after = stripped.lstrip('#').strip()
-            # 챕터 제목이나 소제목과 같으면 건너뛰기
-            if chapter_title and text_after in chapter_title:
-                continue
-            if subtopic_title and text_after in subtopic_title:
-                continue
-            # 다른 헤더라면 일반 텍스트로 변환
-            if text_after:
-                cleaned_lines.append(text_after)
+        # 빈 줄은 그대로 유지 (단, 처음 3줄 이내에서는 건너뛰기)
+        if not stripped:
+            if idx > 3 or len(cleaned_lines) > 0:
+                cleaned_lines.append(line)
             continue
         
-        # 소제목과 동일한 줄 건너뛰기 (첫 몇 줄에서만)
-        if subtopic_title and len(cleaned_lines) < 3:
-            if stripped == subtopic_title or stripped.replace('**', '') == subtopic_title:
+        # 마크다운 헤더 제거 (##, ###)
+        if stripped.startswith('#'):
+            text_after = stripped.lstrip('#').strip()
+            # 챕터 제목이나 소제목 관련이면 건너뛰기
+            if chapter_title and (text_after in chapter_title or chapter_title in text_after):
+                continue
+            if subtopic_title and (text_after in subtopic_title or subtopic_title in text_after):
+                continue
+            # "챕터", "소제목" 키워드 포함하면 건너뛰기
+            if '챕터' in text_after or '소제목' in text_after:
+                continue
+            continue  # 모든 마크다운 헤더 제거
+        
+        # "챕터 N:" 또는 "챕터N:" 형식 제거
+        if stripped.startswith('챕터') and ':' in stripped[:15]:
+            continue
+        
+        # "소제목:" 형식 제거
+        if stripped.startswith('소제목') and ':' in stripped[:10]:
+            continue
+        
+        # 처음 5줄 이내에서 소제목과 동일하거나 유사한 줄 제거
+        if subtopic_title and idx < 5:
+            clean_subtopic = subtopic_title.replace('**', '').strip()
+            clean_stripped = stripped.replace('**', '').strip()
+            if clean_stripped == clean_subtopic:
+                continue
+            # 소제목이 줄에 포함되어 있고 줄이 짧으면 제거
+            if clean_subtopic in clean_stripped and len(clean_stripped) < len(clean_subtopic) + 20:
+                continue
+        
+        # 챕터 제목과 동일한 줄 제거
+        if chapter_title and idx < 5:
+            clean_chapter = chapter_title.replace('**', '').strip()
+            if clean_chapter in stripped or stripped in clean_chapter:
                 continue
         
         cleaned_lines.append(line)
     
-    return '\n'.join(cleaned_lines)
+    # 결과 앞뒤 빈 줄 정리
+    result = '\n'.join(cleaned_lines).strip()
+    return result
 
 def escape_html(text):
     """HTML 특수문자 이스케이프"""
@@ -2090,10 +2117,6 @@ with tabs[2]:
                                                     st.session_state['chapters'][chapter]['subtopic_data'][new_st_title] = st.session_state['chapters'][chapter]['subtopic_data'].pop(old_st)
                                                 else:
                                                     st.session_state['chapters'][chapter]['subtopic_data'][new_st_title] = {'questions': [], 'answers': [], 'content': ''}
-                                                # 위젯 상태도 업데이트
-                                                widget_key = f"edit_st_{i}_{j}"
-                                                if widget_key in st.session_state:
-                                                    st.session_state[widget_key] = new_st_title
                                                 trigger_auto_save()
                                                 st.rerun()
                                 with col_st_del:
@@ -2235,10 +2258,6 @@ with tabs[3]:
                                     chapter_data['subtopic_data'][new_title] = chapter_data['subtopic_data'].pop(old_st)
                                 else:
                                     chapter_data['subtopic_data'][new_title] = {'questions': [], 'answers': [], 'content': ''}
-                                # 위젯 상태도 업데이트
-                                widget_key = f"view_st_tab4_{j}"
-                                if widget_key in st.session_state:
-                                    st.session_state[widget_key] = new_title
                                 trigger_auto_save()
                                 st.rerun()
             
@@ -2637,58 +2656,7 @@ with tabs[3]:
         st.success(f"✅ 총 {content_count_tab4}개 소제목 작성 완료 | {total_chars_tab4:,}자")
         
         with st.expander("📖 전체 본문 펼쳐보기", expanded=False):
-            # 고급스러운 책 형식 HTML
-            book_html = """
-            <style>
-                .book-container {
-                    font-family: 'Pretendard', -apple-system, sans-serif;
-                    max-width: 800px;
-                    margin: 0 auto;
-                    padding: 20px;
-                    background: #fafafa;
-                    border-radius: 12px;
-                }
-                .book-chapter {
-                    margin-bottom: 40px;
-                    padding: 30px;
-                    background: white;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-                }
-                .book-chapter-title {
-                    font-size: 1.5em;
-                    font-weight: 700;
-                    color: #111;
-                    margin-bottom: 30px;
-                    padding-bottom: 15px;
-                    border-bottom: 2px solid #111;
-                }
-                .book-subtopic {
-                    margin-bottom: 30px;
-                }
-                .book-subtopic-title {
-                    font-size: 1.15em;
-                    font-weight: 600;
-                    color: #333;
-                    margin-bottom: 15px;
-                    padding-left: 15px;
-                    border-left: 3px solid #666;
-                }
-                .book-content {
-                    font-size: 1em;
-                    line-height: 1.9;
-                    color: #333;
-                    text-align: justify;
-                }
-                .book-content p {
-                    margin-bottom: 15px;
-                    text-indent: 1em;
-                }
-            </style>
-            <div class="book-container">
-            """
-            
-            # 챕터별로 HTML 생성
+            # 마크다운 형식으로 깔끔하게 표시
             for ch_idx, ch in enumerate(st.session_state['outline'], 1):
                 if ch in st.session_state['chapters']:
                     ch_data = st.session_state['chapters'][ch]
@@ -2698,7 +2666,27 @@ with tabs[3]:
                             subtopic_list = [ch]
                         
                         chapter_has_content = False
-                        chapter_html = f'<div class="book-chapter"><div class="book-chapter-title">{escape_html(ch)}</div>'
+                        chapter_contents = []
+                        
+                        for st_name in subtopic_list:
+                            st_data = ch_data['subtopic_data'].get(st_name, {})
+                            if st_data.get('content'):
+                                # 본문 정제
+                                cleaned_content = clean_content_for_display(st_data['content'], st_name, ch)
+                                if cleaned_content.strip():
+                                    chapter_contents.append((st_name, cleaned_content))
+                                    chapter_has_content = True
+                        
+                        if chapter_has_content:
+                            # 챕터 제목
+                            st.markdown(f"## {ch}")
+                            st.markdown("---")
+                            
+                            # 소제목과 본문
+                            for st_name, content in chapter_contents:
+                                st.markdown(f"**{st_name}**")
+                                st.markdown(content)
+                                st.markdown("")  # 빈 줄
                         
                         for st_name in subtopic_list:
                             st_data = ch_data['subtopic_data'].get(st_name, {})
@@ -2707,24 +2695,6 @@ with tabs[3]:
                                 raw_content = st_data['content']
                                 cleaned_content = clean_content_for_display(raw_content, st_name, ch)
                                 # HTML 이스케이프 후 줄바꿈 처리
-                                safe_content = escape_html(cleaned_content)
-                                content_text = safe_content.replace('\n\n', '</p><p>').replace('\n', '<br>')
-                                
-                                chapter_html += f'''
-                                <div class="book-subtopic">
-                                    <div class="book-subtopic-title">{escape_html(st_name)}</div>
-                                    <div class="book-content"><p>{content_text}</p></div>
-                                </div>
-                                '''
-                                chapter_has_content = True
-                        
-                        chapter_html += '</div>'
-                        
-                        if chapter_has_content:
-                            book_html += chapter_html
-            
-            book_html += '</div>'
-            st.markdown(book_html, unsafe_allow_html=True)
     else:
         st.info("💡 아직 작성된 본문이 없습니다. 위에서 소제목을 선택하고 본문을 작성해주세요.")
 
@@ -2809,10 +2779,9 @@ with tabs[4]:
                     if len(parts) == 2:
                         ch, st_name = parts
                         st.session_state['chapters'][ch]['subtopic_data'][st_name]['content'] = st.session_state['refined_content']
-                        # 🔧 수정: 위젯 키도 업데이트
-                        widget_key = f"content_main_{ch}_{st_name}"
-                        st.session_state[widget_key] = st.session_state['refined_content']
+                        trigger_auto_save()
                         st.success("적용됨!")
+                        st.rerun()
     
     with col2:
         st.markdown('<p class="section-label">Quality</p>', unsafe_allow_html=True)
@@ -3160,60 +3129,8 @@ with tabs[5]:
             total_chars = calculate_char_count(pure_content_tab6)
             st.caption(f"📊 총 {total_chars:,}자 / 약 {total_chars//500}페이지 (500자/페이지 기준)")
             
-            # 본문 표시 - 고급스러운 책 형식
+            # 본문 표시 - 마크다운 형식
             with st.expander("📖 전체 본문 펼쳐보기", expanded=False):
-                # 고급스러운 책 형식 HTML
-                book_html = """
-                <style>
-                    .book-container-tab6 {
-                        font-family: 'Pretendard', -apple-system, sans-serif;
-                        max-width: 800px;
-                        margin: 0 auto;
-                        padding: 20px;
-                        background: #fafafa;
-                        border-radius: 12px;
-                    }
-                    .book-chapter-tab6 {
-                        margin-bottom: 40px;
-                        padding: 30px;
-                        background: white;
-                        border-radius: 8px;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-                    }
-                    .book-chapter-title-tab6 {
-                        font-size: 1.5em;
-                        font-weight: 700;
-                        color: #111;
-                        margin-bottom: 30px;
-                        padding-bottom: 15px;
-                        border-bottom: 2px solid #111;
-                    }
-                    .book-subtopic-tab6 {
-                        margin-bottom: 30px;
-                    }
-                    .book-subtopic-title-tab6 {
-                        font-size: 1.15em;
-                        font-weight: 600;
-                        color: #333;
-                        margin-bottom: 15px;
-                        padding-left: 15px;
-                        border-left: 3px solid #666;
-                    }
-                    .book-content-tab6 {
-                        font-size: 1em;
-                        line-height: 1.9;
-                        color: #333;
-                        text-align: justify;
-                    }
-                    .book-content-tab6 p {
-                        margin-bottom: 15px;
-                        text-indent: 1em;
-                    }
-                </style>
-                <div class="book-container-tab6">
-                """
-                
-                # 챕터별로 HTML 생성
                 for ch_idx, chapter in enumerate(st.session_state['outline'], 1):
                     if chapter in st.session_state['chapters']:
                         ch_data = st.session_state['chapters'][chapter]
@@ -3223,35 +3140,29 @@ with tabs[5]:
                                 subtopic_list = [chapter]
                             
                             chapter_has_content = False
-                            chapter_html = f'<div class="book-chapter-tab6"><div class="book-chapter-title-tab6">{escape_html(chapter)}</div>'
+                            chapter_contents = []
                             
                             for st_name in subtopic_list:
                                 st_data = ch_data['subtopic_data'].get(st_name, {})
                                 if st_data.get('content'):
-                                    # 본문 정제: 마크다운 기호, 중복 제목 제거
-                                    raw_content = st_data['content']
-                                    cleaned_content = clean_content_for_display(raw_content, st_name, chapter)
-                                    # HTML 이스케이프 후 줄바꿈 처리
-                                    safe_content = escape_html(cleaned_content)
-                                    content_text = safe_content.replace('\n\n', '</p><p>').replace('\n', '<br>')
-                                    
-                                    chapter_html += f'''
-                                    <div class="book-subtopic-tab6">
-                                        <div class="book-subtopic-title-tab6">{escape_html(st_name)}</div>
-                                        <div class="book-content-tab6"><p>{content_text}</p></div>
-                                    </div>
-                                    '''
-                                    chapter_has_content = True
-                            
-                            chapter_html += '</div>'
+                                    # 본문 정제
+                                    cleaned_content = clean_content_for_display(st_data['content'], st_name, chapter)
+                                    if cleaned_content.strip():
+                                        chapter_contents.append((st_name, cleaned_content))
+                                        chapter_has_content = True
                             
                             if chapter_has_content:
-                                book_html += chapter_html
-                
-                book_html += '</div>'
-                st.markdown(book_html, unsafe_allow_html=True)
+                                # 챕터 제목
+                                st.markdown(f"## {chapter}")
+                                st.markdown("---")
+                                
+                                # 소제목과 본문
+                                for st_name, content in chapter_contents:
+                                    st.markdown(f"**{st_name}**")
+                                    st.markdown(content)
+                                    st.markdown("")  # 빈 줄
             
-            # 편집 가능한 텍스트 영역 (마크다운 형식)
+            # 편집 가능한 텍스트 영역
             with st.expander("✏️ 전체 본문 편집하기 (텍스트)", expanded=False):
                 # 편집용 텍스트 생성
                 edit_text = ""
