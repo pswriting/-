@@ -1202,7 +1202,57 @@ with tabs[3]:
         st.warning("⚠️ 챕터가 없습니다.")
         st.stop()
     
-    selected_chapter = st.selectbox("📚 챕터 선택", chapter_list, key="chapter_select_main")
+    # 챕터 선택 및 편집
+    col_chapter_select, col_chapter_edit = st.columns([6, 1])
+    
+    with col_chapter_select:
+        selected_chapter = st.selectbox("📚 챕터 선택", chapter_list, key="chapter_select_main")
+    
+    # 챕터 편집 모드 키
+    chapter_edit_key = f"edit_mode_chapter_{selected_chapter}"
+    if chapter_edit_key not in st.session_state:
+        st.session_state[chapter_edit_key] = False
+    
+    with col_chapter_edit:
+        if st.session_state[chapter_edit_key]:
+            if st.button("❌", key="cancel_chapter_edit", help="취소"):
+                st.session_state[chapter_edit_key] = False
+                st.rerun()
+        else:
+            if st.button("✏️", key="edit_chapter_btn", help="챕터 수정"):
+                st.session_state[chapter_edit_key] = True
+                st.rerun()
+    
+    # 챕터 편집 UI
+    if st.session_state[chapter_edit_key]:
+        st.markdown("#### ✏️ 챕터 제목 수정")
+        col_input, col_save = st.columns([5, 1])
+        with col_input:
+            new_chapter_title = st.text_input(
+                "새 챕터 제목",
+                value=selected_chapter,
+                key="new_chapter_title_input",
+                label_visibility="collapsed"
+            )
+        with col_save:
+            if st.button("💾 저장", key="save_chapter_title"):
+                if new_chapter_title.strip() and new_chapter_title != selected_chapter:
+                    # 챕터 이름 변경
+                    idx = st.session_state['outline'].index(selected_chapter)
+                    st.session_state['outline'][idx] = new_chapter_title
+                    
+                    # chapters 데이터도 업데이트
+                    if selected_chapter in st.session_state['chapters']:
+                        st.session_state['chapters'][new_chapter_title] = st.session_state['chapters'].pop(selected_chapter)
+                    
+                    st.session_state[chapter_edit_key] = False
+                    trigger_auto_save()
+                    st.success(f"✅ 챕터 제목이 변경되었습니다!")
+                    st.rerun()
+                else:
+                    st.session_state[chapter_edit_key] = False
+                    st.rerun()
+        st.markdown("---")
     if selected_chapter not in st.session_state['chapters']:
         st.session_state['chapters'][selected_chapter] = {'subtopics': [], 'subtopic_data': {}}
     chapter_data = st.session_state['chapters'][selected_chapter]
