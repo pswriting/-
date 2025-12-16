@@ -1434,30 +1434,36 @@ def calculate_char_count(text):
     return len(text.replace('\n', '').replace(' ', ''))
 
 def clean_content_for_display(content, subtopic_title=None, chapter_title=None):
-    """본문에서 마크다운 기호, HTML 태그, 중복 제목 제거"""
+    """본문에서 마크다운 기호, HTML 태그, 중복 제목 완전 제거"""
     if not content:
         return ""
     
-    # 1. 먼저 HTML 엔티티를 실제 문자로 변환 (순서 중요!)
-    content = content.replace('&amp;', '&')
-    content = content.replace('&lt;', '<')
-    content = content.replace('&gt;', '>')
-    content = content.replace('&quot;', '"')
-    content = content.replace('&#39;', "'")
-    content = content.replace('&nbsp;', ' ')
+    # 반복적으로 HTML 엔티티 변환 및 태그 제거 (중첩 처리)
+    for _ in range(5):  # 최대 5번 반복
+        old_content = content
+        
+        # HTML 엔티티 변환
+        content = content.replace('&amp;', '&')
+        content = content.replace('&lt;', '<')
+        content = content.replace('&gt;', '>')
+        content = content.replace('&quot;', '"')
+        content = content.replace('&#39;', "'")
+        content = content.replace('&nbsp;', ' ')
+        
+        # HTML 태그 제거
+        content = re.sub(r'<[^>]+>', '', content)
+        
+        # 변화가 없으면 중단
+        if content == old_content:
+            break
     
-    # 2. HTML 태그 완전 제거 (엔티티 변환 후에 해야 함)
-    content = re.sub(r'<[^>]+>', '', content)
+    # div, p, span 등의 태그 텍스트가 남아있으면 제거 (태그가 깨진 경우)
+    content = re.sub(r'</?div[^>]*>?', '', content, flags=re.IGNORECASE)
+    content = re.sub(r'</?p[^>]*>?', '', content, flags=re.IGNORECASE)
+    content = re.sub(r'</?span[^>]*>?', '', content, flags=re.IGNORECASE)
+    content = re.sub(r'class\s*=\s*["\'][^"\']*["\']', '', content)
     
-    # 3. 혹시 남아있는 엔티티 다시 변환
-    content = content.replace('&amp;', '&')
-    content = content.replace('&lt;', '<')
-    content = content.replace('&gt;', '>')
-    
-    # 4. 다시 한번 HTML 태그 제거 (중첩 처리)
-    content = re.sub(r'<[^>]+>', '', content)
-    
-    # 5. 마크다운 기호 제거
+    # 마크다운 기호 제거
     content = content.replace('**', '')
     content = content.replace('__', '')
     content = content.replace('`', '')
@@ -1474,7 +1480,11 @@ def clean_content_for_display(content, subtopic_title=None, chapter_title=None):
                 cleaned_lines.append('')
             continue
         
-        # 마크다운 헤더 제거 (#으로 시작)
+        # HTML/CSS 관련 텍스트 건너뛰기
+        if any(keyword in stripped.lower() for keyword in ['ebook-', 'book-', 'class=', '</div', '<div', '<p>', '</p']):
+            continue
+        
+        # 마크다운 헤더 제거
         if stripped.startswith('#'):
             continue
         
