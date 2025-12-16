@@ -1434,13 +1434,22 @@ def calculate_char_count(text):
     return len(text.replace('\n', '').replace(' ', ''))
 
 def clean_content_for_display(content, subtopic_title=None, chapter_title=None):
-    """본문에서 마크다운 기호와 중복 제목 제거"""
+    """본문에서 마크다운 기호, HTML 태그, 중복 제목 제거"""
     if not content:
         return ""
     
+    # 1. HTML 태그 제거 (예: <div class="...">, </div>, <p>, </p> 등)
+    content = re.sub(r'<[^>]+>', '', content)
+    # HTML 엔티티 변환
+    content = content.replace('&amp;', '&')
+    content = content.replace('&lt;', '<')
+    content = content.replace('&gt;', '>')
+    content = content.replace('&quot;', '"')
+    content = content.replace('&#39;', "'")
+    content = content.replace('&nbsp;', ' ')
+    
     lines = content.split('\n')
     cleaned_lines = []
-    skip_count = 0  # 처음 몇 줄은 제목 관련일 가능성이 높음
     
     for idx, line in enumerate(lines):
         stripped = line.strip()
@@ -2687,14 +2696,6 @@ with tabs[3]:
                                 st.markdown(f"**{st_name}**")
                                 st.markdown(content)
                                 st.markdown("")  # 빈 줄
-                        
-                        for st_name in subtopic_list:
-                            st_data = ch_data['subtopic_data'].get(st_name, {})
-                            if st_data.get('content'):
-                                # 본문 정제: 마크다운 기호, 중복 제목 제거
-                                raw_content = st_data['content']
-                                cleaned_content = clean_content_for_display(raw_content, st_name, ch)
-                                # HTML 이스케이프 후 줄바꿈 처리
     else:
         st.info("💡 아직 작성된 본문이 없습니다. 위에서 소제목을 선택하고 본문을 작성해주세요.")
 
