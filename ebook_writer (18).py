@@ -1438,10 +1438,7 @@ def clean_content_for_display(content, subtopic_title=None, chapter_title=None):
     if not content:
         return ""
     
-    # 1. HTML 태그 완전 제거 (예: <div class="...">, </div>, <p> 등)
-    content = re.sub(r'<[^>]+>', '', content)
-    
-    # 2. HTML 엔티티 변환
+    # 1. 먼저 HTML 엔티티를 실제 문자로 변환 (순서 중요!)
     content = content.replace('&amp;', '&')
     content = content.replace('&lt;', '<')
     content = content.replace('&gt;', '>')
@@ -1449,10 +1446,21 @@ def clean_content_for_display(content, subtopic_title=None, chapter_title=None):
     content = content.replace('&#39;', "'")
     content = content.replace('&nbsp;', ' ')
     
-    # 3. 마크다운 기호 제거
-    content = content.replace('**', '')  # 볼드
-    content = content.replace('__', '')  # 볼드
-    content = content.replace('`', '')   # 코드
+    # 2. HTML 태그 완전 제거 (엔티티 변환 후에 해야 함)
+    content = re.sub(r'<[^>]+>', '', content)
+    
+    # 3. 혹시 남아있는 엔티티 다시 변환
+    content = content.replace('&amp;', '&')
+    content = content.replace('&lt;', '<')
+    content = content.replace('&gt;', '>')
+    
+    # 4. 다시 한번 HTML 태그 제거 (중첩 처리)
+    content = re.sub(r'<[^>]+>', '', content)
+    
+    # 5. 마크다운 기호 제거
+    content = content.replace('**', '')
+    content = content.replace('__', '')
+    content = content.replace('`', '')
     
     lines = content.split('\n')
     cleaned_lines = []
