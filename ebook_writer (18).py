@@ -1193,29 +1193,14 @@ def generate_subtopic_content(subtopic_title, chapter_title, questions, answers,
 [작가 인터뷰 - 이 내용만 바탕으로 작성]
 {qa_pairs}
 
-[가장 중요: 문체 통일 - 반말 단정체]
-
-반드시 "~다" 체로 통일하세요. 존댓말 절대 금지!
-
-올바른 문체 (반말 단정체):
-- "나는 20대 초반, 주식 시장에 뛰어들었다."
-- "그때 깨달았다. 시장은 확률 싸움이라는 것을."
-- "3개월 동안 매출 0원이었다. 나는 가격을 절반으로 내렸다."
-- "많은 사람들이 착각한다. 열심히 하면 된다고."
-- "결론부터 말하겠다. 방법은 딱 하나다."
-
-잘못된 문체 (존댓말 - 절대 금지):
-- "~입니다", "~습니다", "~세요", "~하세요"
-- "~해야 합니다", "~하셔야 합니다"
-- "~인 것입니다", "~라고 할 수 있습니다"
-
-[자청 스타일 글쓰기 원칙]
+[자청 스타일 글쓰기 - 핵심 원칙]
 
 1. 첫 문장부터 후킹
+   - 독자가 "뭐지?" 하고 멈추게 만드는 첫 문장
    - 결론이나 충격적 사실부터 시작
    
-   나쁜 예: "주식 투자에서 성공하려면 확률을 이해해야 합니다."
-   좋은 예: "나는 3번 깡통을 찼다. 그제야 깨달았다."
+   나쁜 예: "'크몽'에서 월 1,000만 원의 현금 흐름을 만드는 것은 꿈같은 이야기가 아닙니다."
+   좋은 예: "저는 왕따였습니다. 지금은 월 1,000만 원을 법니다."
 
 2. 문단 구성
    - 한 문단 2~4문장
@@ -1224,27 +1209,29 @@ def generate_subtopic_content(subtopic_title, chapter_title, questions, answers,
 
 3. 비유는 최소화
    - 비유는 글 전체에서 1~2개만
-   - 억지 비유 금지
+   - 억지 비유 금지 ("썩은 웅덩이", "숨겨진 보물" 같은 거 쓰지 마세요)
    - 비유 대신 구체적 사실과 숫자로 설득
 
 4. 팩트와 스토리로 몰입
    - 구체적인 상황 묘사 (언제, 어디서, 무슨 일이)
    - 감정보다 행동과 결과 중심
+   - "느꼈습니다" 대신 "했습니다"
    
-   나쁜 예: "절망감이 밀려왔다."
-   좋은 예: "통장 잔고 47만원. 월급날까지 2주."
+   나쁜 예: "절망감이 밀려왔습니다. 희망이 사라지는 것 같았습니다."
+   좋은 예: "3개월 동안 매출 0원. 저는 서비스 가격을 절반으로 내렸습니다."
 
-5. 1인칭 "나" 사용
-   - "저"가 아니라 "나"
-   - "나는 ~했다", "내가 ~한 이유는"
+5. 담백하고 직접적인 톤
+   - 과장 없이 사실 그대로
+   - 독자에게 직접 말하듯
+   - 짧고 힘 있는 문장
 
 [절대 금지]
-- 존댓말 ("~입니다", "~세요", "~하세요")
 - 한 문장씩 띄어쓰기
 - 과도한 비유 (글 전체에 2개 이상)
 - "~같은 이야기가 아닙니다" 같은 뻔한 표현
+- "마치 ~처럼", "~와 같았습니다" 남발
 - 감정 과잉 표현 ("절망", "희망", "꿈")
-- 교훈적 마무리 ("포기하지 마라")
+- 교훈적 마무리 ("포기하지 마세요")
 - **굵은글씨**, *기울임*
 - 주어 뒤 쉼표
 
@@ -1253,30 +1240,30 @@ def generate_subtopic_content(subtopic_title, chapter_title, questions, answers,
 
 [미션]
 위 인터뷰 내용을 바탕으로 '{subtopic_title}' 본문을 작성하세요.
-반드시 반말 단정체(~다)로 통일하고, 자청처럼 담백하고 팩트 중심으로 써라."""
+자청처럼 담백하고, 팩트 중심으로, 끝까지 읽게 만드세요."""
     return ask_ai("베스트셀러 작가", prompt, temperature=0.8)
 
 
 def refine_content(content, style="친근한"):
     style_guide = {
-        "친근한": """자청 스타일 (반말 단정체)
-- 반드시 "~다" 체로 통일
+        "친근한": """친근한 스타일
+- 자신감 있는 단정 ("~입니다")
 - 구체적 숫자와 팩트
-- "나"를 주어로 사용""",
+- 독자에게 직접 말하듯""",
         
-        "전문적": """전문가 스타일 (반말 단정체)
-- 반드시 "~다" 체로 통일
+        "전문적": """전문가 스타일
 - 데이터와 출처 강조
-- 논리적 전개""",
+- 논리적 전개
+- 신뢰감 있는 톤""",
         
-        "직설적": """직설 스타일 (반말 단정체)
-- 반드시 "~다" 체로 통일
+        "직설적": """직설 스타일
 - 핵심만 간결하게
+- 군더더기 제로
 - 팩트 폭격""",
         
-        "스토리텔링": """스토리 스타일 (반말 단정체)
-- 반드시 "~다" 체로 통일
+        "스토리텔링": """스토리 스타일
 - 구체적 장면 묘사
+- 대화체 활용
 - 감정선 살리기"""
     }
     
@@ -1285,35 +1272,28 @@ def refine_content(content, style="친근한"):
 [원본]
 {content}
 
-[가장 중요: 문체 통일 - 반말 단정체]
+[가장 중요한 수정사항 - 문단 구성]
+1. 한 문단은 반드시 2~4문장으로 구성
+2. 절대로 한 문장만 띄어쓰기 하지 마세요
+3. 관련된 문장들은 같은 문단에 묶으세요
 
-모든 문장을 "~다" 체로 통일하세요. 존댓말 절대 금지!
+[올바른 문단 예시]
+"많은 사람들이 리버스 엔지니어링을 겉핥기 수준으로만 이해합니다. 성공적인 현금 흐름을 창출하지 못하는 이유죠. 그들이 간과하는 가장 중요한 디테일은 바로 '끈기'입니다.
 
-변환 예시:
-- "~입니다" → "~다"
-- "~습니다" → "~다"  
-- "~하세요" → "~해라" 또는 "~하면 된다"
-- "저는" → "나는"
-- "~해야 합니다" → "~해야 한다"
+단순히 따라 하는 것을 넘어, 끊임없이 분석하고 개선해야 합니다. 모방은 창조의 어머니라는 말처럼, 꾸준한 노력이 필요합니다."
 
-올바른 문체:
-"나는 3번 깡통을 찼다. 그때 깨달았다. 주식은 확률 싸움이라는 것을. 많은 사람들이 착각한다. 열심히 하면 된다고. 아니다. 방법이 틀리면 아무리 열심히 해도 망한다."
-
-[문단 구성]
-1. 한 문단 2~4문장
-2. 한 문장씩 띄어쓰기 금지
-3. 관련 문장은 같은 문단에
-
-[추가 수정]
-- 주어 뒤 쉼표 제거
-- 마크다운 제거 (**굵게**, *기울임*)
+[추가 수정사항]
+- 주어 뒤 쉼표 제거 (저는, → 저는)
+- 마크다운 완전 제거 (**굵게**, *기울임*)
 - "따라서", "그러므로" 줄이기
+- 뻔한 비유 → 신선한 비유로 교체
+- 자신감 있는 단정 톤
 
 [목표 스타일]
 {style_guide.get(style, style_guide["친근한"])}
 
 [출력]
-다듬어진 글만 출력. 설명 없이. 반드시 반말 단정체로."""
+다듬어진 글만 출력. 설명 없이."""
     return ask_ai("에디터", prompt, temperature=0.7)
 
 def check_quality(content):
@@ -1454,39 +1434,19 @@ def calculate_char_count(text):
     return len(text.replace('\n', '').replace(' ', ''))
 
 def clean_content_for_display(content, subtopic_title=None, chapter_title=None):
-    """본문에서 마크다운 기호, HTML 태그, 중복 제목 완전 제거"""
+    """본문에서 마크다운 기호, HTML 태그, 중복 제목 제거"""
     if not content:
         return ""
     
-    # 반복적으로 HTML 엔티티 변환 및 태그 제거 (중첩 처리)
-    for _ in range(5):  # 최대 5번 반복
-        old_content = content
-        
-        # HTML 엔티티 변환
-        content = content.replace('&amp;', '&')
-        content = content.replace('&lt;', '<')
-        content = content.replace('&gt;', '>')
-        content = content.replace('&quot;', '"')
-        content = content.replace('&#39;', "'")
-        content = content.replace('&nbsp;', ' ')
-        
-        # HTML 태그 제거
-        content = re.sub(r'<[^>]+>', '', content)
-        
-        # 변화가 없으면 중단
-        if content == old_content:
-            break
-    
-    # div, p, span 등의 태그 텍스트가 남아있으면 제거 (태그가 깨진 경우)
-    content = re.sub(r'</?div[^>]*>?', '', content, flags=re.IGNORECASE)
-    content = re.sub(r'</?p[^>]*>?', '', content, flags=re.IGNORECASE)
-    content = re.sub(r'</?span[^>]*>?', '', content, flags=re.IGNORECASE)
-    content = re.sub(r'class\s*=\s*["\'][^"\']*["\']', '', content)
-    
-    # 마크다운 기호 제거
-    content = content.replace('**', '')
-    content = content.replace('__', '')
-    content = content.replace('`', '')
+    # 1. HTML 태그 제거 (예: <div class="...">, </div>, <p>, </p> 등)
+    content = re.sub(r'<[^>]+>', '', content)
+    # HTML 엔티티 변환
+    content = content.replace('&amp;', '&')
+    content = content.replace('&lt;', '<')
+    content = content.replace('&gt;', '>')
+    content = content.replace('&quot;', '"')
+    content = content.replace('&#39;', "'")
+    content = content.replace('&nbsp;', ' ')
     
     lines = content.split('\n')
     cleaned_lines = []
@@ -1494,21 +1454,26 @@ def clean_content_for_display(content, subtopic_title=None, chapter_title=None):
     for idx, line in enumerate(lines):
         stripped = line.strip()
         
-        # 빈 줄 처리
+        # 빈 줄은 그대로 유지 (단, 처음 3줄 이내에서는 건너뛰기)
         if not stripped:
-            if len(cleaned_lines) > 0:
-                cleaned_lines.append('')
+            if idx > 3 or len(cleaned_lines) > 0:
+                cleaned_lines.append(line)
             continue
         
-        # HTML/CSS 관련 텍스트 건너뛰기
-        if any(keyword in stripped.lower() for keyword in ['ebook-', 'book-', 'class=', '</div', '<div', '<p>', '</p']):
-            continue
-        
-        # 마크다운 헤더 제거
+        # 마크다운 헤더 제거 (##, ###)
         if stripped.startswith('#'):
-            continue
+            text_after = stripped.lstrip('#').strip()
+            # 챕터 제목이나 소제목 관련이면 건너뛰기
+            if chapter_title and (text_after in chapter_title or chapter_title in text_after):
+                continue
+            if subtopic_title and (text_after in subtopic_title or subtopic_title in text_after):
+                continue
+            # "챕터", "소제목" 키워드 포함하면 건너뛰기
+            if '챕터' in text_after or '소제목' in text_after:
+                continue
+            continue  # 모든 마크다운 헤더 제거
         
-        # "챕터" 관련 줄 제거
+        # "챕터 N:" 또는 "챕터N:" 형식 제거
         if stripped.startswith('챕터') and ':' in stripped[:15]:
             continue
         
@@ -1516,26 +1481,26 @@ def clean_content_for_display(content, subtopic_title=None, chapter_title=None):
         if stripped.startswith('소제목') and ':' in stripped[:10]:
             continue
         
-        # 처음 5줄에서 소제목/챕터 제목 중복 제거
-        if idx < 5:
-            if subtopic_title:
-                clean_st = subtopic_title.replace('**', '').replace('*', '').strip()
-                if clean_st in stripped or stripped in clean_st:
-                    continue
-            if chapter_title:
-                clean_ch = chapter_title.replace('**', '').replace('*', '').strip()
-                if clean_ch in stripped or stripped in clean_ch:
-                    continue
+        # 처음 5줄 이내에서 소제목과 동일하거나 유사한 줄 제거
+        if subtopic_title and idx < 5:
+            clean_subtopic = subtopic_title.replace('**', '').strip()
+            clean_stripped = stripped.replace('**', '').strip()
+            if clean_stripped == clean_subtopic:
+                continue
+            # 소제목이 줄에 포함되어 있고 줄이 짧으면 제거
+            if clean_subtopic in clean_stripped and len(clean_stripped) < len(clean_subtopic) + 20:
+                continue
         
-        cleaned_lines.append(stripped)
+        # 챕터 제목과 동일한 줄 제거
+        if chapter_title and idx < 5:
+            clean_chapter = chapter_title.replace('**', '').strip()
+            if clean_chapter in stripped or stripped in clean_chapter:
+                continue
+        
+        cleaned_lines.append(line)
     
-    # 결과 정리
+    # 결과 앞뒤 빈 줄 정리
     result = '\n'.join(cleaned_lines).strip()
-    
-    # 연속 빈 줄을 하나로
-    while '\n\n\n' in result:
-        result = result.replace('\n\n\n', '\n\n')
-    
     return result
 
 def escape_html(text):
@@ -2700,7 +2665,7 @@ with tabs[3]:
         st.success(f"✅ 총 {content_count_tab4}개 소제목 작성 완료 | {total_chars_tab4:,}자")
         
         with st.expander("📖 전체 본문 펼쳐보기", expanded=False):
-            # 순수 마크다운으로 표시 (HTML 사용 안함)
+            # 마크다운 형식으로 깔끔하게 표시
             for ch_idx, ch in enumerate(st.session_state['outline'], 1):
                 if ch in st.session_state['chapters']:
                     ch_data = st.session_state['chapters'][ch]
@@ -2709,27 +2674,28 @@ with tabs[3]:
                         if not subtopic_list and ch in ch_data['subtopic_data']:
                             subtopic_list = [ch]
                         
+                        chapter_has_content = False
                         chapter_contents = []
+                        
                         for st_name in subtopic_list:
                             st_data = ch_data['subtopic_data'].get(st_name, {})
                             if st_data.get('content'):
+                                # 본문 정제
                                 cleaned_content = clean_content_for_display(st_data['content'], st_name, ch)
                                 if cleaned_content.strip():
                                     chapter_contents.append((st_name, cleaned_content))
+                                    chapter_has_content = True
                         
-                        if chapter_contents:
-                            # 챕터 구분선
-                            if ch_idx > 1:
-                                st.markdown("---")
-                            
+                        if chapter_has_content:
                             # 챕터 제목
-                            st.markdown(f"### 📖 {ch}")
+                            st.markdown(f"## {ch}")
+                            st.markdown("---")
                             
                             # 소제목과 본문
                             for st_name, content in chapter_contents:
-                                st.markdown(f"**▸ {st_name}**")
-                                st.write(content)
-                                st.markdown("")
+                                st.markdown(f"**{st_name}**")
+                                st.markdown(content)
+                                st.markdown("")  # 빈 줄
     else:
         st.info("💡 아직 작성된 본문이 없습니다. 위에서 소제목을 선택하고 본문을 작성해주세요.")
 
@@ -3164,7 +3130,7 @@ with tabs[5]:
             total_chars = calculate_char_count(pure_content_tab6)
             st.caption(f"📊 총 {total_chars:,}자 / 약 {total_chars//500}페이지 (500자/페이지 기준)")
             
-            # 본문 표시 - 순수 마크다운
+            # 본문 표시 - 마크다운 형식
             with st.expander("📖 전체 본문 펼쳐보기", expanded=False):
                 for ch_idx, chapter in enumerate(st.session_state['outline'], 1):
                     if chapter in st.session_state['chapters']:
@@ -3174,27 +3140,28 @@ with tabs[5]:
                             if not subtopic_list and chapter in ch_data['subtopic_data']:
                                 subtopic_list = [chapter]
                             
-                            chapter_contents_tab6 = []
+                            chapter_has_content = False
+                            chapter_contents = []
+                            
                             for st_name in subtopic_list:
                                 st_data = ch_data['subtopic_data'].get(st_name, {})
                                 if st_data.get('content'):
+                                    # 본문 정제
                                     cleaned_content = clean_content_for_display(st_data['content'], st_name, chapter)
                                     if cleaned_content.strip():
-                                        chapter_contents_tab6.append((st_name, cleaned_content))
+                                        chapter_contents.append((st_name, cleaned_content))
+                                        chapter_has_content = True
                             
-                            if chapter_contents_tab6:
-                                # 챕터 구분선
-                                if ch_idx > 1:
-                                    st.markdown("---")
-                                
+                            if chapter_has_content:
                                 # 챕터 제목
-                                st.markdown(f"### 📖 {chapter}")
+                                st.markdown(f"## {chapter}")
+                                st.markdown("---")
                                 
                                 # 소제목과 본문
-                                for st_name, content in chapter_contents_tab6:
-                                    st.markdown(f"**▸ {st_name}**")
-                                    st.write(content)
-                                    st.markdown("")
+                                for st_name, content in chapter_contents:
+                                    st.markdown(f"**{st_name}**")
+                                    st.markdown(content)
+                                    st.markdown("")  # 빈 줄
             
             # 편집 가능한 텍스트 영역
             with st.expander("✏️ 전체 본문 편집하기 (텍스트)", expanded=False):
