@@ -844,7 +844,40 @@ def check_quality(content):
 🎯 총평"""
     return ask_ai("베스트셀러 편집자", prompt, temperature=0.6)
 
+def regenerate_chapter_outline(chapter_num, topic, persona, current_outline):
+    """특정 챕터를 재생성"""
+    prompt = f"""주제 '{topic}'의 전자책에서 챕터 {chapter_num}을 새롭게 작성해주세요.
 
+현재 목차:
+{chr(10).join(current_outline)}
+
+챕터 {chapter_num}만 새롭게 작성하되, 다른 챕터들과 중복되지 않고 자연스럽게 이어지도록 해주세요.
+
+출력 형식:
+## [새로운 챕터 제목]
+- [소제목 1]
+- [소제목 2]
+- [소제목 3]
+"""
+    return ask_ai("전자책 기획자", prompt, temperature=0.7)
+
+
+def regenerate_single_subtopic(chapter_title, subtopic_num, topic, current_subtopics):
+    """특정 소제목 하나만 재생성"""
+    prompt = f"""주제 '{topic}'의 챕터 '{chapter_title}'에서 소제목 {subtopic_num}번을 새롭게 작성해주세요.
+
+현재 소제목들:
+{chr(10).join([f"- {s}" for s in current_subtopics])}
+
+{subtopic_num}번 소제목만 새롭게 작성하되, 다른 소제목들과 중복되지 않게 해주세요.
+후킹이 강하고 구체적인 소제목으로 만들어주세요.
+
+출력: 새 소제목 한 줄만 (번호나 기호 없이)
+"""
+    result = ask_ai("카피라이터", prompt, temperature=0.7)
+    # 첫 번째 줄만 반환, 불필요한 기호 제거
+    first_line = result.strip().split('\n')[0]
+    return first_line.lstrip('- ').lstrip('0123456789.').strip()
 def generate_marketing_copy(title, subtitle, topic, persona):
     prompt = f"""당신은 크몽에서 전자책을 수천 권 판매한 탑셀러입니다.
 
