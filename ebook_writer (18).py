@@ -487,56 +487,43 @@ def ask_ai(system_role, prompt, temperature=0.7):
 # 🔥 핵심 개선: 목차 생성 함수 (천재 작가 버전)
 # ==========================================
 def generate_outline(topic, persona, pain_points):
-    # 상단에 정의한 템플릿 활용
-    prompt = TOC_PROMPT_TEMPLATE + f"""
-    
-    # Input Data
-    [전자책 주제]: {topic}
-    [주 독자]: {persona}
-    [독자의 고통]: {pain_points}
+    prompt = f"""당신은 베스트셀러 전자책 기획자입니다.
 
-    # Output Format (이 형식 엄수 - 설명 없이 목차만 출력)
-    ## PART 1: [자극적인 파트 제목]
-    - [후킹 소제목 1]
-    - [후킹 소제목 2]
-    - [후킹 소제목 3]
+[전자책 주제]: {topic}
+[주 독자]: {persona}
+[독자의 고통]: {pain_points}
 
-    ## PART 2: [솔루션 파트 제목]
-    - [후킹 소제목 1]
-    - [후킹 소제목 2]
-    - [후킹 소제목 3]
-    
-    ## PART 3: [즉시 실행 파트 제목]
-    - [후킹 소제목 1]
-    - [후킹 소제목 2]
-    - [후킹 소제목 3]
+위 정보를 바탕으로 4개의 PART로 구성된 전자책 목차를 만들어주세요.
 
-    ## PART 4: [확장과 유지 파트 제목]
-    - [후킹 소제목 1]
-    - [후킹 소제목 2]
-    - [후킹 소제목 3]
-    """
+[중요] 반드시 아래 형식을 정확히 따라주세요:
+
+## PART 1: 착각 붕괴 - 당신이 몰랐던 진실
+- 첫 번째 소제목 (호기심 자극)
+- 두 번째 소제목 (공감 유발)
+- 세 번째 소제목 (문제 인식)
+
+## PART 2: 비밀 공개 - 해결책의 핵심
+- 첫 번째 소제목
+- 두 번째 소제목
+- 세 번째 소제목
+
+## PART 3: 즉시 실행 - 오늘부터 시작
+- 첫 번째 소제목
+- 두 번째 소제목
+- 세 번째 소제목
+
+## PART 4: 확장과 자유 - 더 큰 그림
+- 첫 번째 소제목
+- 두 번째 소제목
+- 세 번째 소제목
+
+[절대 금지]
+- **굵은글씨**, 번호(1.1, 1.2), 들여쓰기 사용 금지
+- 설명이나 부연 없이 목차만 출력
+- 각 PART는 반드시 "## PART"로 시작
+- 각 소제목은 반드시 "- "로 시작 (하이픈 + 공백)
+"""
     return ask_ai("베스트셀러 기획자", prompt, temperature=0.55)
-
-# ==========================================
-# 🔥 핵심 개선: 소제목 생성 함수 (Easy & Attractive)
-# ==========================================
-def generate_subtopics(chapter_title, topic, persona, num_subtopics=3):
-    prompt = f"""
-    # Task
-    주제 '{topic}'의 챕터 '{chapter_title}'에 들어갈 소제목 {num_subtopics}개를 작성하십시오.
-    
-    # Critical Constraints (천재 작가의 원칙)
-    1. **전문 용어 금지**: 'R.P.M', '메커니즘' 같은 말 대신 '신호', '공식', '비법' 등 쉬운 말을 쓰십시오.
-    2. **결과 중심**: 과정을 설명하지 말고, 독자가 얻을 이득(돈, 시간, 행복)을 제목에 박으십시오.
-    3. **행동 유도**: "분석하는 법" (X) -> "딱 3가지만 확인하고 끄세요" (O)
-    
-    # Output Format (번호만 출력)
-    1. [소제목]
-    2. [소제목]
-    3. [소제목]
-    """
-    return ask_ai("카피라이터", prompt, temperature=0.6)
 
 # ==========================================
 # 🔥 핵심 개선: 본문 생성 함수 (자청 스타일, 1500자+)
@@ -1053,34 +1040,57 @@ with tabs[2]:
                         chapters = []
                         current_chapter = None
                         chapter_subtopics = {}
+                        
                         for line in lines:
                             line = line.strip()
-                            if not line or line == '...':
+                            if not line:
                                 continue
-                            if line.startswith('##') or any(line.lower().startswith(kw) for kw in ['챕터', 'chapter']):
+                            
+                            # 챕터 감지: ## 또는 PART로 시작
+                            if line.startswith('##') or 'PART' in line.upper():
+                                # ## 제거하고 정리
                                 chapter_name = line.lstrip('#').strip()
-                                current_chapter = chapter_name
-                                chapters.append(current_chapter)
-                                chapter_subtopics[current_chapter] = []
+                                # **굵은글씨** 제거
+                                chapter_name = re.sub(r'\*\*(.+?)\*\*', r'\1', chapter_name)
+                                if chapter_name and 'PART' in chapter_name.upper():
+                                    current_chapter = chapter_name
+                                    chapters.append(current_chapter)
+                                    chapter_subtopics[current_chapter] = []
+                            
+                            # 소제목 감지: -로 시작
                             elif current_chapter and line.startswith('-'):
                                 subtopic = line.lstrip('- ').strip()
-                                if subtopic:
+                                # **굵은글씨** 제거
+                                subtopic = re.sub(r'\*\*(.+?)\*\*', r'\1', subtopic)
+                                # 번호 제거 (1.1, 1.2 등)
+                                subtopic = re.sub(r'^\d+\.\d+\s*', '', subtopic)
+                                subtopic = re.sub(r'^\d+\.\s*', '', subtopic)
+                                if subtopic and len(subtopic) > 2:
                                     chapter_subtopics[current_chapter].append(subtopic)
-                        st.session_state['outline'] = chapters
-                        # 순수 목차만 저장 (AI 설명문 제거)
-                        clean_outline = ""
-                        for ch in chapters:
-                            clean_outline += f"## {ch}\n"
-                            for st_name in chapter_subtopics.get(ch, []):
-                                clean_outline += f"- {st_name}\n"
-                            clean_outline += "\n"
-                        st.session_state['full_outline'] = clean_outline.strip()
-                        for ch in chapters:
-                            subtopics = chapter_subtopics.get(ch, [])
-                            st.session_state['chapters'][ch] = {'subtopics': subtopics, 'subtopic_data': {st: {'questions': [], 'answers': [], 'content': ''} for st in subtopics}}
-                        total_subtopics = sum(len(chapter_subtopics.get(ch, [])) for ch in chapters)
-                        st.success(f"✅ {len(chapters)}개 챕터, {total_subtopics}개 소제목 생성됨!")
-                        st.rerun()
+                        
+                        # 결과 저장
+                        if chapters:
+                            st.session_state['outline'] = chapters
+                            clean_outline = ""
+                            for ch in chapters:
+                                clean_outline += f"## {ch}\n"
+                                for st_name in chapter_subtopics.get(ch, []):
+                                    clean_outline += f"- {st_name}\n"
+                                clean_outline += "\n"
+                            st.session_state['full_outline'] = clean_outline.strip()
+                            
+                            for ch in chapters:
+                                subtopics = chapter_subtopics.get(ch, [])
+                                st.session_state['chapters'][ch] = {
+                                    'subtopics': subtopics, 
+                                    'subtopic_data': {st: {'questions': [], 'answers': [], 'content': ''} for st in subtopics}
+                                }
+                            
+                            total_subtopics = sum(len(chapter_subtopics.get(ch, [])) for ch in chapters)
+                            st.success(f"✅ {len(chapters)}개 챕터, {total_subtopics}개 소제목 생성됨!")
+                            st.rerun()
+                        else:
+                            st.error("목차 생성 실패. 다시 시도해주세요.")
             
             if 'full_outline' in st.session_state and st.session_state['full_outline']:
                 st.markdown("**📋 현재 목차**")
