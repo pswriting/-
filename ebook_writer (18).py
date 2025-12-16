@@ -848,7 +848,7 @@ def ask_ai(system_role, prompt, temperature=0.7):
     
     try:
         genai.configure(api_key=api_key)
-        ai_model = genai.GenerativeModel('models/gemini-2.0-flash')
+        ai_model = genai.GenerativeModel('models/gemini-1.5-pro')
         generation_config = genai.types.GenerationConfig(temperature=temperature)
         full_prompt = f"""당신은 {system_role}입니다.
 
