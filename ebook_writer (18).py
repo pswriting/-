@@ -2665,7 +2665,84 @@ with tabs[3]:
         st.success(f"✅ 총 {content_count_tab4}개 소제목 작성 완료 | {total_chars_tab4:,}자")
         
         with st.expander("📖 전체 본문 펼쳐보기", expanded=False):
-            # 마크다운 형식으로 깔끔하게 표시
+            # 책 스타일 CSS
+            book_style = """
+            <style>
+            @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap');
+            
+            .ebook-container {
+                max-width: 750px;
+                margin: 0 auto;
+                padding: 40px 50px;
+                background: linear-gradient(to right, #f9f6f1 0%, #fdfbf7 5%, #fdfbf7 95%, #f9f6f1 100%);
+                box-shadow: 0 0 20px rgba(0,0,0,0.1), inset 0 0 60px rgba(0,0,0,0.02);
+                border-radius: 3px;
+                font-family: 'Noto Serif KR', Georgia, serif;
+                color: #2c2c2c;
+                line-height: 2;
+                font-size: 16px;
+            }
+            
+            .ebook-chapter {
+                margin-bottom: 50px;
+                page-break-after: always;
+            }
+            
+            .ebook-chapter-title {
+                font-size: 1.6em;
+                font-weight: 700;
+                color: #1a1a1a;
+                text-align: center;
+                margin: 40px 0 30px 0;
+                padding: 20px 0;
+                border-top: 2px solid #333;
+                border-bottom: 1px solid #999;
+                letter-spacing: 2px;
+            }
+            
+            .ebook-subtopic {
+                margin: 35px 0;
+            }
+            
+            .ebook-subtopic-title {
+                font-size: 1.15em;
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 18px;
+                padding-left: 15px;
+                border-left: 3px solid #666;
+                letter-spacing: 1px;
+            }
+            
+            .ebook-content {
+                text-align: justify;
+                word-break: keep-all;
+            }
+            
+            .ebook-content p {
+                text-indent: 1.5em;
+                margin-bottom: 1em;
+            }
+            
+            .ebook-content p:first-child::first-letter {
+                font-size: 1.3em;
+                font-weight: 600;
+            }
+            
+            .ebook-divider {
+                text-align: center;
+                margin: 40px 0;
+                color: #999;
+                font-size: 1.2em;
+                letter-spacing: 10px;
+            }
+            </style>
+            """
+            
+            # 책 내용 HTML 생성
+            book_html = book_style + '<div class="ebook-container">'
+            
+            chapter_count = 0
             for ch_idx, ch in enumerate(st.session_state['outline'], 1):
                 if ch in st.session_state['chapters']:
                     ch_data = st.session_state['chapters'][ch]
@@ -2674,28 +2751,44 @@ with tabs[3]:
                         if not subtopic_list and ch in ch_data['subtopic_data']:
                             subtopic_list = [ch]
                         
-                        chapter_has_content = False
                         chapter_contents = []
-                        
                         for st_name in subtopic_list:
                             st_data = ch_data['subtopic_data'].get(st_name, {})
                             if st_data.get('content'):
-                                # 본문 정제
                                 cleaned_content = clean_content_for_display(st_data['content'], st_name, ch)
                                 if cleaned_content.strip():
                                     chapter_contents.append((st_name, cleaned_content))
-                                    chapter_has_content = True
                         
-                        if chapter_has_content:
-                            # 챕터 제목
-                            st.markdown(f"## {ch}")
-                            st.markdown("---")
+                        if chapter_contents:
+                            if chapter_count > 0:
+                                book_html += '<div class="ebook-divider">• • •</div>'
                             
-                            # 소제목과 본문
+                            book_html += '<div class="ebook-chapter">'
+                            book_html += f'<div class="ebook-chapter-title">{escape_html(ch)}</div>'
+                            
                             for st_name, content in chapter_contents:
-                                st.markdown(f"**{st_name}**")
-                                st.markdown(content)
-                                st.markdown("")  # 빈 줄
+                                # 본문을 문단으로 변환
+                                paragraphs = content.split('\n\n')
+                                formatted_content = ''
+                                for para in paragraphs:
+                                    para = para.strip()
+                                    if para:
+                                        # 줄바꿈을 공백으로 변환 (문단 내)
+                                        para = para.replace('\n', ' ')
+                                        formatted_content += f'<p>{escape_html(para)}</p>'
+                                
+                                book_html += f'''
+                                <div class="ebook-subtopic">
+                                    <div class="ebook-subtopic-title">{escape_html(st_name)}</div>
+                                    <div class="ebook-content">{formatted_content}</div>
+                                </div>
+                                '''
+                            
+                            book_html += '</div>'
+                            chapter_count += 1
+            
+            book_html += '</div>'
+            st.markdown(book_html, unsafe_allow_html=True)
     else:
         st.info("💡 아직 작성된 본문이 없습니다. 위에서 소제목을 선택하고 본문을 작성해주세요.")
 
@@ -3130,8 +3223,80 @@ with tabs[5]:
             total_chars = calculate_char_count(pure_content_tab6)
             st.caption(f"📊 총 {total_chars:,}자 / 약 {total_chars//500}페이지 (500자/페이지 기준)")
             
-            # 본문 표시 - 마크다운 형식
+            # 본문 표시 - 책 스타일
             with st.expander("📖 전체 본문 펼쳐보기", expanded=False):
+                # 책 스타일 CSS (탭 6용)
+                book_style_tab6 = """
+                <style>
+                @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap');
+                
+                .ebook-container-tab6 {
+                    max-width: 750px;
+                    margin: 0 auto;
+                    padding: 40px 50px;
+                    background: linear-gradient(to right, #f9f6f1 0%, #fdfbf7 5%, #fdfbf7 95%, #f9f6f1 100%);
+                    box-shadow: 0 0 20px rgba(0,0,0,0.1), inset 0 0 60px rgba(0,0,0,0.02);
+                    border-radius: 3px;
+                    font-family: 'Noto Serif KR', Georgia, serif;
+                    color: #2c2c2c;
+                    line-height: 2;
+                    font-size: 16px;
+                }
+                
+                .ebook-chapter-tab6 {
+                    margin-bottom: 50px;
+                }
+                
+                .ebook-chapter-title-tab6 {
+                    font-size: 1.6em;
+                    font-weight: 700;
+                    color: #1a1a1a;
+                    text-align: center;
+                    margin: 40px 0 30px 0;
+                    padding: 20px 0;
+                    border-top: 2px solid #333;
+                    border-bottom: 1px solid #999;
+                    letter-spacing: 2px;
+                }
+                
+                .ebook-subtopic-tab6 {
+                    margin: 35px 0;
+                }
+                
+                .ebook-subtopic-title-tab6 {
+                    font-size: 1.15em;
+                    font-weight: 600;
+                    color: #333;
+                    margin-bottom: 18px;
+                    padding-left: 15px;
+                    border-left: 3px solid #666;
+                    letter-spacing: 1px;
+                }
+                
+                .ebook-content-tab6 {
+                    text-align: justify;
+                    word-break: keep-all;
+                }
+                
+                .ebook-content-tab6 p {
+                    text-indent: 1.5em;
+                    margin-bottom: 1em;
+                }
+                
+                .ebook-divider-tab6 {
+                    text-align: center;
+                    margin: 40px 0;
+                    color: #999;
+                    font-size: 1.2em;
+                    letter-spacing: 10px;
+                }
+                </style>
+                """
+                
+                # 책 내용 HTML 생성
+                book_html_tab6 = book_style_tab6 + '<div class="ebook-container-tab6">'
+                
+                chapter_count_tab6 = 0
                 for ch_idx, chapter in enumerate(st.session_state['outline'], 1):
                     if chapter in st.session_state['chapters']:
                         ch_data = st.session_state['chapters'][chapter]
@@ -3140,28 +3305,42 @@ with tabs[5]:
                             if not subtopic_list and chapter in ch_data['subtopic_data']:
                                 subtopic_list = [chapter]
                             
-                            chapter_has_content = False
-                            chapter_contents = []
-                            
+                            chapter_contents_tab6 = []
                             for st_name in subtopic_list:
                                 st_data = ch_data['subtopic_data'].get(st_name, {})
                                 if st_data.get('content'):
-                                    # 본문 정제
                                     cleaned_content = clean_content_for_display(st_data['content'], st_name, chapter)
                                     if cleaned_content.strip():
-                                        chapter_contents.append((st_name, cleaned_content))
-                                        chapter_has_content = True
+                                        chapter_contents_tab6.append((st_name, cleaned_content))
                             
-                            if chapter_has_content:
-                                # 챕터 제목
-                                st.markdown(f"## {chapter}")
-                                st.markdown("---")
+                            if chapter_contents_tab6:
+                                if chapter_count_tab6 > 0:
+                                    book_html_tab6 += '<div class="ebook-divider-tab6">• • •</div>'
                                 
-                                # 소제목과 본문
-                                for st_name, content in chapter_contents:
-                                    st.markdown(f"**{st_name}**")
-                                    st.markdown(content)
-                                    st.markdown("")  # 빈 줄
+                                book_html_tab6 += '<div class="ebook-chapter-tab6">'
+                                book_html_tab6 += f'<div class="ebook-chapter-title-tab6">{escape_html(chapter)}</div>'
+                                
+                                for st_name, content in chapter_contents_tab6:
+                                    paragraphs = content.split('\n\n')
+                                    formatted_content = ''
+                                    for para in paragraphs:
+                                        para = para.strip()
+                                        if para:
+                                            para = para.replace('\n', ' ')
+                                            formatted_content += f'<p>{escape_html(para)}</p>'
+                                    
+                                    book_html_tab6 += f'''
+                                    <div class="ebook-subtopic-tab6">
+                                        <div class="ebook-subtopic-title-tab6">{escape_html(st_name)}</div>
+                                        <div class="ebook-content-tab6">{formatted_content}</div>
+                                    </div>
+                                    '''
+                                
+                                book_html_tab6 += '</div>'
+                                chapter_count_tab6 += 1
+                
+                book_html_tab6 += '</div>'
+                st.markdown(book_html_tab6, unsafe_allow_html=True)
             
             # 편집 가능한 텍스트 영역
             with st.expander("✏️ 전체 본문 편집하기 (텍스트)", expanded=False):
