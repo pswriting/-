@@ -1213,28 +1213,90 @@ with tabs[3]:
     
     st.markdown("---")
     
-    # 소제목 전체 보기
-    with st.expander(f"📋 '{selected_chapter}' 소제목 ({len(chapter_data.get('subtopics', []))}개)", expanded=False):
+# 소제목 전체 보기 (기존 코드를 이것으로 교체)
+    with st.expander(f"📋 '{selected_chapter}' 소제목 ({len(chapter_data.get('subtopics', []))}개)", expanded=True):
         if chapter_data.get('subtopics'):
             for j, st_name in enumerate(chapter_data['subtopics']):
                 has_content = bool(chapter_data['subtopic_data'].get(st_name, {}).get('content', '').strip())
                 status_icon = "✅" if has_content else "⬜"
-                col_st_view, col_st_regen = st.columns([5, 1])
-                with col_st_view:
-                    st.write(f"{status_icon} {j+1}. {st_name}")
-                with col_st_regen:
-                    if st.button("🔄", key=f"regen_st_tab4_{j}", help="재생성"):
-                        with st.spinner("재생성 중..."):
-                            new_title = regenerate_single_subtopic(selected_chapter, j + 1, st.session_state['topic'], chapter_data['subtopics'])
-                            if new_title:
-                                old_st = chapter_data['subtopics'][j]
+                
+                # 편집 모드 키
+                edit_key = f"edit_mode_subtopic_{selected_chapter}_{j}"
+                if edit_key not in st.session_state:
+                    st.session_state[edit_key] = False
+                
+                col_status, col_title, col_edit, col_regen = st.columns([0.5, 6, 1, 1])
+                
+                with col_status:
+                    st.write(status_icon)
+                
+                with col_title:
+                    if st.session_state[edit_key]:
+                        # 편집 모드
+                        new_title = st.text_input(
+                            "소제목 수정", 
+                            value=st_name, 
+                            key=f"edit_input_{selected_chapter}_{j}",
+                            label_visibility="collapsed"
+                        )
+                    else:
+                        # 보기 모드
+                        st.write(f"{j+1}. {st_name}")
+                
+                with col_edit:
+                    if st.session_state[edit_key]:
+                        # 저장 버튼
+                        if st.button("💾", key=f"save_st_{selected_chapter}_{j}", help="저장"):
+                            new_title = st.session_state.get(f"edit_input_{selected_chapter}_{j}", st_name)
+                            if new_title and new_title != st_name:
+                                # 소제목 이름 변경
                                 chapter_data['subtopics'][j] = new_title
-                                if old_st in chapter_data['subtopic_data']:
-                                    chapter_data['subtopic_data'][new_title] = chapter_data['subtopic_data'].pop(old_st)
+                                # subtopic_data도 업데이트
+                                if st_name in chapter_data['subtopic_data']:
+                                    chapter_data['subtopic_data'][new_title] = chapter_data['subtopic_data'].pop(st_name)
                                 else:
                                     chapter_data['subtopic_data'][new_title] = {'questions': [], 'answers': [], 'content': ''}
-                                trigger_auto_save()
-                                st.rerun()
+                            st.session_state[edit_key] = False
+                            st.rerun()
+                    else:
+                        # 편집 버튼
+                        if st.button("✏️", key=f"edit_btn_{selected_chapter}_{j}", help="수정"):
+                            st.session_state[edit_key] = True
+                            st.rerun()
+                
+                with col_regen:
+                    if st.session_state[edit_key]:
+                        # 취소 버튼
+                        if st.button("❌", key=f"cancel_st_{selected_chapter}_{j}", help="취소"):
+                            st.session_state[edit_key] = False
+                            st.rerun()
+                    else:
+                        # 재생성 버튼
+                        if st.button("🔄", key=f"regen_st_tab4_{j}", help="AI 재생성"):
+                            with st.spinner("재생성 중..."):
+                                new_title = regenerate_single_subtopic(selected_chapter, j + 1, st.session_state['topic'], chapter_data['subtopics'])
+                                if new_title:
+                                    old_st = chapter_data['subtopics'][j]
+                                    chapter_data['subtopics'][j] = new_title
+                                    if old_st in chapter_data['subtopic_data']:
+                                        chapter_data['subtopic_data'][new_title] = chapter_data['subtopic_data'].pop(old_st)
+                                    else:
+                                        chapter_data['subtopic_data'][new_title] = {'questions': [], 'answers': [], 'content': ''}
+                                    st.rerun()
+            
+            # 소제목 추가 버튼
+            st.markdown("---")
+            col_add1, col_add2 = st.columns([4, 1])
+            with col_add1:
+                new_subtopic = st.text_input("새 소제목 추가", placeholder="직접 입력...", key=f"add_new_st_{selected_chapter}", label_visibility="collapsed")
+            with col_add2:
+                if st.button("➕ 추가", key=f"add_st_btn_{selected_chapter}"):
+                    if new_subtopic.strip() and new_subtopic not in chapter_data['subtopics']:
+                        chapter_data['subtopics'].append(new_subtopic)
+                        chapter_data['subtopic_data'][new_subtopic] = {'questions': [], 'answers': [], 'content': ''}
+                        st.rerun()
+        else:
+            st.info("소제목이 없습니다. 아래에서 추가하세요.")
     
     st.markdown("---")
     
