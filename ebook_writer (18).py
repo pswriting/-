@@ -471,7 +471,7 @@ def ask_ai(system_role, prompt, temperature=0.7):
         final_system_instruction = GENIUS_PERSONA + "\n\n" + f"현재 당신의 구체적인 역할: {system_role}"
         
         # 모델 생성 (flash 모델이 속도와 창의성 밸런스가 좋음)
-          ai_model = genai.GenerativeModel('models/gemini-2.0-flash')
+        ai_model = genai.GenerativeModel('models/gemini-2.0-flash')
         
         generation_config = genai.types.GenerationConfig(
             temperature=temperature,
