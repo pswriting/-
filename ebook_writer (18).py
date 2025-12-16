@@ -1438,9 +1438,10 @@ def clean_content_for_display(content, subtopic_title=None, chapter_title=None):
     if not content:
         return ""
     
-    # 1. HTML 태그 제거 (예: <div class="...">, </div>, <p>, </p> 등)
+    # 1. HTML 태그 완전 제거 (예: <div class="...">, </div>, <p> 등)
     content = re.sub(r'<[^>]+>', '', content)
-    # HTML 엔티티 변환
+    
+    # 2. HTML 엔티티 변환
     content = content.replace('&amp;', '&')
     content = content.replace('&lt;', '<')
     content = content.replace('&gt;', '>')
@@ -1448,32 +1449,28 @@ def clean_content_for_display(content, subtopic_title=None, chapter_title=None):
     content = content.replace('&#39;', "'")
     content = content.replace('&nbsp;', ' ')
     
+    # 3. 마크다운 기호 제거
+    content = content.replace('**', '')  # 볼드
+    content = content.replace('__', '')  # 볼드
+    content = content.replace('`', '')   # 코드
+    
     lines = content.split('\n')
     cleaned_lines = []
     
     for idx, line in enumerate(lines):
         stripped = line.strip()
         
-        # 빈 줄은 그대로 유지 (단, 처음 3줄 이내에서는 건너뛰기)
+        # 빈 줄 처리
         if not stripped:
-            if idx > 3 or len(cleaned_lines) > 0:
-                cleaned_lines.append(line)
+            if len(cleaned_lines) > 0:
+                cleaned_lines.append('')
             continue
         
-        # 마크다운 헤더 제거 (##, ###)
+        # 마크다운 헤더 제거 (#으로 시작)
         if stripped.startswith('#'):
-            text_after = stripped.lstrip('#').strip()
-            # 챕터 제목이나 소제목 관련이면 건너뛰기
-            if chapter_title and (text_after in chapter_title or chapter_title in text_after):
-                continue
-            if subtopic_title and (text_after in subtopic_title or subtopic_title in text_after):
-                continue
-            # "챕터", "소제목" 키워드 포함하면 건너뛰기
-            if '챕터' in text_after or '소제목' in text_after:
-                continue
-            continue  # 모든 마크다운 헤더 제거
+            continue
         
-        # "챕터 N:" 또는 "챕터N:" 형식 제거
+        # "챕터" 관련 줄 제거
         if stripped.startswith('챕터') and ':' in stripped[:15]:
             continue
         
@@ -1481,26 +1478,26 @@ def clean_content_for_display(content, subtopic_title=None, chapter_title=None):
         if stripped.startswith('소제목') and ':' in stripped[:10]:
             continue
         
-        # 처음 5줄 이내에서 소제목과 동일하거나 유사한 줄 제거
-        if subtopic_title and idx < 5:
-            clean_subtopic = subtopic_title.replace('**', '').strip()
-            clean_stripped = stripped.replace('**', '').strip()
-            if clean_stripped == clean_subtopic:
-                continue
-            # 소제목이 줄에 포함되어 있고 줄이 짧으면 제거
-            if clean_subtopic in clean_stripped and len(clean_stripped) < len(clean_subtopic) + 20:
-                continue
+        # 처음 5줄에서 소제목/챕터 제목 중복 제거
+        if idx < 5:
+            if subtopic_title:
+                clean_st = subtopic_title.replace('**', '').replace('*', '').strip()
+                if clean_st in stripped or stripped in clean_st:
+                    continue
+            if chapter_title:
+                clean_ch = chapter_title.replace('**', '').replace('*', '').strip()
+                if clean_ch in stripped or stripped in clean_ch:
+                    continue
         
-        # 챕터 제목과 동일한 줄 제거
-        if chapter_title and idx < 5:
-            clean_chapter = chapter_title.replace('**', '').strip()
-            if clean_chapter in stripped or stripped in clean_chapter:
-                continue
-        
-        cleaned_lines.append(line)
+        cleaned_lines.append(stripped)
     
-    # 결과 앞뒤 빈 줄 정리
+    # 결과 정리
     result = '\n'.join(cleaned_lines).strip()
+    
+    # 연속 빈 줄을 하나로
+    while '\n\n\n' in result:
+        result = result.replace('\n\n\n', '\n\n')
+    
     return result
 
 def escape_html(text):
