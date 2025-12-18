@@ -465,7 +465,10 @@ def ask_ai(system_role, prompt, temperature=0.7):
     if not api_key:
         return "⚠️ API 키를 먼저 입력해주세요."
     try:
-        genai.configure(api_key=api_key)
+        try:
+            genai.configure(api_key=api_key)
+            final_system_instruction = GENIUS_PERSONA + "\n\n" + f"현재 당신의 구체적인 역할: {system_role}"
+            ai_model = genai.GenerativeModel('models/gemini-2.0-flash')
         
         # 시스템 롤에 천재 작가 페르소나 결합
         final_system_instruction = GENIUS_PERSONA + "\n\n" + f"현재 당신의 구체적인 역할: {system_role}"
