@@ -465,16 +465,13 @@ def ask_ai(system_role, prompt, temperature=0.7):
     if not api_key:
         return "⚠️ API 키를 먼저 입력해주세요."
     try:
-        try:
-            genai.configure(api_key=api_key)
-            final_system_instruction = GENIUS_PERSONA + "\n\n" + f"현재 당신의 구체적인 역할: {system_role}"
-            ai_model = genai.GenerativeModel('models/gemini-2.0-flash')
+        genai.configure(api_key=api_key)
         
         # 시스템 롤에 천재 작가 페르소나 결합
         final_system_instruction = GENIUS_PERSONA + "\n\n" + f"현재 당신의 구체적인 역할: {system_role}"
         
         # 모델 생성 (flash 모델이 속도와 창의성 밸런스가 좋음)
-          ai_model = genai.GenerativeModel('models/gemini-2.0-flash')
+        ai_model = genai.GenerativeModel('models/gemini-2.0-flash')
         
         generation_config = genai.types.GenerationConfig(
             temperature=temperature,
@@ -490,56 +487,43 @@ def ask_ai(system_role, prompt, temperature=0.7):
 # 🔥 핵심 개선: 목차 생성 함수 (천재 작가 버전)
 # ==========================================
 def generate_outline(topic, persona, pain_points):
-    # 상단에 정의한 템플릿 활용
-    prompt = TOC_PROMPT_TEMPLATE + f"""
-    
-    # Input Data
-    [전자책 주제]: {topic}
-    [주 독자]: {persona}
-    [독자의 고통]: {pain_points}
+    prompt = f"""당신은 베스트셀러 전자책 기획자입니다.
 
-    # Output Format (이 형식 엄수 - 설명 없이 목차만 출력)
-    ## PART 1: [자극적인 파트 제목]
-    - [후킹 소제목 1]
-    - [후킹 소제목 2]
-    - [후킹 소제목 3]
+[전자책 주제]: {topic}
+[주 독자]: {persona}
+[독자의 고통]: {pain_points}
 
-    ## PART 2: [솔루션 파트 제목]
-    - [후킹 소제목 1]
-    - [후킹 소제목 2]
-    - [후킹 소제목 3]
-    
-    ## PART 3: [즉시 실행 파트 제목]
-    - [후킹 소제목 1]
-    - [후킹 소제목 2]
-    - [후킹 소제목 3]
+위 정보를 바탕으로 4개의 PART로 구성된 전자책 목차를 만들어주세요.
 
-    ## PART 4: [확장과 유지 파트 제목]
-    - [후킹 소제목 1]
-    - [후킹 소제목 2]
-    - [후킹 소제목 3]
-    """
+[중요] 반드시 아래 형식을 정확히 따라주세요:
+
+## PART 1: 착각 붕괴 - 당신이 몰랐던 진실
+- 첫 번째 소제목 (호기심 자극)
+- 두 번째 소제목 (공감 유발)
+- 세 번째 소제목 (문제 인식)
+
+## PART 2: 비밀 공개 - 해결책의 핵심
+- 첫 번째 소제목
+- 두 번째 소제목
+- 세 번째 소제목
+
+## PART 3: 즉시 실행 - 오늘부터 시작
+- 첫 번째 소제목
+- 두 번째 소제목
+- 세 번째 소제목
+
+## PART 4: 확장과 자유 - 더 큰 그림
+- 첫 번째 소제목
+- 두 번째 소제목
+- 세 번째 소제목
+
+[절대 금지]
+- **굵은글씨**, 번호(1.1, 1.2), 들여쓰기 사용 금지
+- 설명이나 부연 없이 목차만 출력
+- 각 PART는 반드시 "## PART"로 시작
+- 각 소제목은 반드시 "- "로 시작 (하이픈 + 공백)
+"""
     return ask_ai("베스트셀러 기획자", prompt, temperature=0.55)
-
-# ==========================================
-# 🔥 핵심 개선: 소제목 생성 함수 (Easy & Attractive)
-# ==========================================
-def generate_subtopics(chapter_title, topic, persona, num_subtopics=3):
-    prompt = f"""
-    # Task
-    주제 '{topic}'의 챕터 '{chapter_title}'에 들어갈 소제목 {num_subtopics}개를 작성하십시오.
-    
-    # Critical Constraints (천재 작가의 원칙)
-    1. **전문 용어 금지**: 'R.P.M', '메커니즘' 같은 말 대신 '신호', '공식', '비법' 등 쉬운 말을 쓰십시오.
-    2. **결과 중심**: 과정을 설명하지 말고, 독자가 얻을 이득(돈, 시간, 행복)을 제목에 박으십시오.
-    3. **행동 유도**: "분석하는 법" (X) -> "딱 3가지만 확인하고 끄세요" (O)
-    
-    # Output Format (번호만 출력)
-    1. [소제목]
-    2. [소제목]
-    3. [소제목]
-    """
-    return ask_ai("카피라이터", prompt, temperature=0.6)
 
 # ==========================================
 # 🔥 핵심 개선: 본문 생성 함수 (자청 스타일, 1500자+)
@@ -847,7 +831,40 @@ def check_quality(content):
 🎯 총평"""
     return ask_ai("베스트셀러 편집자", prompt, temperature=0.6)
 
+def regenerate_chapter_outline(chapter_num, topic, persona, current_outline):
+    """특정 챕터를 재생성"""
+    prompt = f"""주제 '{topic}'의 전자책에서 챕터 {chapter_num}을 새롭게 작성해주세요.
 
+현재 목차:
+{chr(10).join(current_outline)}
+
+챕터 {chapter_num}만 새롭게 작성하되, 다른 챕터들과 중복되지 않고 자연스럽게 이어지도록 해주세요.
+
+출력 형식:
+## [새로운 챕터 제목]
+- [소제목 1]
+- [소제목 2]
+- [소제목 3]
+"""
+    return ask_ai("전자책 기획자", prompt, temperature=0.7)
+
+
+def regenerate_single_subtopic(chapter_title, subtopic_num, topic, current_subtopics):
+    """특정 소제목 하나만 재생성"""
+    prompt = f"""주제 '{topic}'의 챕터 '{chapter_title}'에서 소제목 {subtopic_num}번을 새롭게 작성해주세요.
+
+현재 소제목들:
+{chr(10).join([f"- {s}" for s in current_subtopics])}
+
+{subtopic_num}번 소제목만 새롭게 작성하되, 다른 소제목들과 중복되지 않게 해주세요.
+후킹이 강하고 구체적인 소제목으로 만들어주세요.
+
+출력: 새 소제목 한 줄만 (번호나 기호 없이)
+"""
+    result = ask_ai("카피라이터", prompt, temperature=0.7)
+    # 첫 번째 줄만 반환, 불필요한 기호 제거
+    first_line = result.strip().split('\n')[0]
+    return first_line.lstrip('- ').lstrip('0123456789.').strip()
 def generate_marketing_copy(title, subtitle, topic, persona):
     prompt = f"""당신은 크몽에서 전자책을 수천 권 판매한 탑셀러입니다.
 
@@ -1023,34 +1040,57 @@ with tabs[2]:
                         chapters = []
                         current_chapter = None
                         chapter_subtopics = {}
+                        
                         for line in lines:
                             line = line.strip()
-                            if not line or line == '...':
+                            if not line:
                                 continue
-                            if line.startswith('##') or any(line.lower().startswith(kw) for kw in ['챕터', 'chapter']):
+                            
+                            # 챕터 감지: ## 또는 PART로 시작
+                            if line.startswith('##') or 'PART' in line.upper():
+                                # ## 제거하고 정리
                                 chapter_name = line.lstrip('#').strip()
-                                current_chapter = chapter_name
-                                chapters.append(current_chapter)
-                                chapter_subtopics[current_chapter] = []
+                                # **굵은글씨** 제거
+                                chapter_name = re.sub(r'\*\*(.+?)\*\*', r'\1', chapter_name)
+                                if chapter_name and 'PART' in chapter_name.upper():
+                                    current_chapter = chapter_name
+                                    chapters.append(current_chapter)
+                                    chapter_subtopics[current_chapter] = []
+                            
+                            # 소제목 감지: -로 시작
                             elif current_chapter and line.startswith('-'):
                                 subtopic = line.lstrip('- ').strip()
-                                if subtopic:
+                                # **굵은글씨** 제거
+                                subtopic = re.sub(r'\*\*(.+?)\*\*', r'\1', subtopic)
+                                # 번호 제거 (1.1, 1.2 등)
+                                subtopic = re.sub(r'^\d+\.\d+\s*', '', subtopic)
+                                subtopic = re.sub(r'^\d+\.\s*', '', subtopic)
+                                if subtopic and len(subtopic) > 2:
                                     chapter_subtopics[current_chapter].append(subtopic)
-                        st.session_state['outline'] = chapters
-                        # 순수 목차만 저장 (AI 설명문 제거)
-                        clean_outline = ""
-                        for ch in chapters:
-                            clean_outline += f"## {ch}\n"
-                            for st_name in chapter_subtopics.get(ch, []):
-                                clean_outline += f"- {st_name}\n"
-                            clean_outline += "\n"
-                        st.session_state['full_outline'] = clean_outline.strip()
-                        for ch in chapters:
-                            subtopics = chapter_subtopics.get(ch, [])
-                            st.session_state['chapters'][ch] = {'subtopics': subtopics, 'subtopic_data': {st: {'questions': [], 'answers': [], 'content': ''} for st in subtopics}}
-                        total_subtopics = sum(len(chapter_subtopics.get(ch, [])) for ch in chapters)
-                        st.success(f"✅ {len(chapters)}개 챕터, {total_subtopics}개 소제목 생성됨!")
-                        st.rerun()
+                        
+                        # 결과 저장
+                        if chapters:
+                            st.session_state['outline'] = chapters
+                            clean_outline = ""
+                            for ch in chapters:
+                                clean_outline += f"## {ch}\n"
+                                for st_name in chapter_subtopics.get(ch, []):
+                                    clean_outline += f"- {st_name}\n"
+                                clean_outline += "\n"
+                            st.session_state['full_outline'] = clean_outline.strip()
+                            
+                            for ch in chapters:
+                                subtopics = chapter_subtopics.get(ch, [])
+                                st.session_state['chapters'][ch] = {
+                                    'subtopics': subtopics, 
+                                    'subtopic_data': {st: {'questions': [], 'answers': [], 'content': ''} for st in subtopics}
+                                }
+                            
+                            total_subtopics = sum(len(chapter_subtopics.get(ch, [])) for ch in chapters)
+                            st.success(f"✅ {len(chapters)}개 챕터, {total_subtopics}개 소제목 생성됨!")
+                            st.rerun()
+                        else:
+                            st.error("목차 생성 실패. 다시 시도해주세요.")
             
             if 'full_outline' in st.session_state and st.session_state['full_outline']:
                 st.markdown("**📋 현재 목차**")
@@ -1205,7 +1245,57 @@ with tabs[3]:
         st.warning("⚠️ 챕터가 없습니다.")
         st.stop()
     
-    selected_chapter = st.selectbox("📚 챕터 선택", chapter_list, key="chapter_select_main")
+    # 챕터 선택 및 편집
+    col_chapter_select, col_chapter_edit = st.columns([6, 1])
+    
+    with col_chapter_select:
+        selected_chapter = st.selectbox("📚 챕터 선택", chapter_list, key="chapter_select_main")
+    
+    # 챕터 편집 모드 키
+    chapter_edit_key = f"edit_mode_chapter_{selected_chapter}"
+    if chapter_edit_key not in st.session_state:
+        st.session_state[chapter_edit_key] = False
+    
+    with col_chapter_edit:
+        if st.session_state[chapter_edit_key]:
+            if st.button("❌", key="cancel_chapter_edit", help="취소"):
+                st.session_state[chapter_edit_key] = False
+                st.rerun()
+        else:
+            if st.button("✏️", key="edit_chapter_btn", help="챕터 수정"):
+                st.session_state[chapter_edit_key] = True
+                st.rerun()
+    
+    # 챕터 편집 UI
+    if st.session_state[chapter_edit_key]:
+        st.markdown("#### ✏️ 챕터 제목 수정")
+        col_input, col_save = st.columns([5, 1])
+        with col_input:
+            new_chapter_title = st.text_input(
+                "새 챕터 제목",
+                value=selected_chapter,
+                key="new_chapter_title_input",
+                label_visibility="collapsed"
+            )
+        with col_save:
+            if st.button("💾 저장", key="save_chapter_title"):
+                if new_chapter_title.strip() and new_chapter_title != selected_chapter:
+                    # 챕터 이름 변경
+                    idx = st.session_state['outline'].index(selected_chapter)
+                    st.session_state['outline'][idx] = new_chapter_title
+                    
+                    # chapters 데이터도 업데이트
+                    if selected_chapter in st.session_state['chapters']:
+                        st.session_state['chapters'][new_chapter_title] = st.session_state['chapters'].pop(selected_chapter)
+                    
+                    st.session_state[chapter_edit_key] = False
+                    trigger_auto_save()
+                    st.success(f"✅ 챕터 제목이 변경되었습니다!")
+                    st.rerun()
+                else:
+                    st.session_state[chapter_edit_key] = False
+                    st.rerun()
+        st.markdown("---")
     if selected_chapter not in st.session_state['chapters']:
         st.session_state['chapters'][selected_chapter] = {'subtopics': [], 'subtopic_data': {}}
     chapter_data = st.session_state['chapters'][selected_chapter]
@@ -1216,28 +1306,90 @@ with tabs[3]:
     
     st.markdown("---")
     
-    # 소제목 전체 보기
-    with st.expander(f"📋 '{selected_chapter}' 소제목 ({len(chapter_data.get('subtopics', []))}개)", expanded=False):
+# 소제목 전체 보기 (기존 코드를 이것으로 교체)
+    with st.expander(f"📋 '{selected_chapter}' 소제목 ({len(chapter_data.get('subtopics', []))}개)", expanded=True):
         if chapter_data.get('subtopics'):
             for j, st_name in enumerate(chapter_data['subtopics']):
                 has_content = bool(chapter_data['subtopic_data'].get(st_name, {}).get('content', '').strip())
                 status_icon = "✅" if has_content else "⬜"
-                col_st_view, col_st_regen = st.columns([5, 1])
-                with col_st_view:
-                    st.write(f"{status_icon} {j+1}. {st_name}")
-                with col_st_regen:
-                    if st.button("🔄", key=f"regen_st_tab4_{j}", help="재생성"):
-                        with st.spinner("재생성 중..."):
-                            new_title = regenerate_single_subtopic(selected_chapter, j + 1, st.session_state['topic'], chapter_data['subtopics'])
-                            if new_title:
-                                old_st = chapter_data['subtopics'][j]
+                
+                # 편집 모드 키
+                edit_key = f"edit_mode_subtopic_{selected_chapter}_{j}"
+                if edit_key not in st.session_state:
+                    st.session_state[edit_key] = False
+                
+                col_status, col_title, col_edit, col_regen = st.columns([0.5, 6, 1, 1])
+                
+                with col_status:
+                    st.write(status_icon)
+                
+                with col_title:
+                    if st.session_state[edit_key]:
+                        # 편집 모드
+                        new_title = st.text_input(
+                            "소제목 수정", 
+                            value=st_name, 
+                            key=f"edit_input_{selected_chapter}_{j}",
+                            label_visibility="collapsed"
+                        )
+                    else:
+                        # 보기 모드
+                        st.write(f"{j+1}. {st_name}")
+                
+                with col_edit:
+                    if st.session_state[edit_key]:
+                        # 저장 버튼
+                        if st.button("💾", key=f"save_st_{selected_chapter}_{j}", help="저장"):
+                            new_title = st.session_state.get(f"edit_input_{selected_chapter}_{j}", st_name)
+                            if new_title and new_title != st_name:
+                                # 소제목 이름 변경
                                 chapter_data['subtopics'][j] = new_title
-                                if old_st in chapter_data['subtopic_data']:
-                                    chapter_data['subtopic_data'][new_title] = chapter_data['subtopic_data'].pop(old_st)
+                                # subtopic_data도 업데이트
+                                if st_name in chapter_data['subtopic_data']:
+                                    chapter_data['subtopic_data'][new_title] = chapter_data['subtopic_data'].pop(st_name)
                                 else:
                                     chapter_data['subtopic_data'][new_title] = {'questions': [], 'answers': [], 'content': ''}
-                                trigger_auto_save()
-                                st.rerun()
+                            st.session_state[edit_key] = False
+                            st.rerun()
+                    else:
+                        # 편집 버튼
+                        if st.button("✏️", key=f"edit_btn_{selected_chapter}_{j}", help="수정"):
+                            st.session_state[edit_key] = True
+                            st.rerun()
+                
+                with col_regen:
+                    if st.session_state[edit_key]:
+                        # 취소 버튼
+                        if st.button("❌", key=f"cancel_st_{selected_chapter}_{j}", help="취소"):
+                            st.session_state[edit_key] = False
+                            st.rerun()
+                    else:
+                        # 재생성 버튼
+                        if st.button("🔄", key=f"regen_st_tab4_{j}", help="AI 재생성"):
+                            with st.spinner("재생성 중..."):
+                                new_title = regenerate_single_subtopic(selected_chapter, j + 1, st.session_state['topic'], chapter_data['subtopics'])
+                                if new_title:
+                                    old_st = chapter_data['subtopics'][j]
+                                    chapter_data['subtopics'][j] = new_title
+                                    if old_st in chapter_data['subtopic_data']:
+                                        chapter_data['subtopic_data'][new_title] = chapter_data['subtopic_data'].pop(old_st)
+                                    else:
+                                        chapter_data['subtopic_data'][new_title] = {'questions': [], 'answers': [], 'content': ''}
+                                    st.rerun()
+            
+            # 소제목 추가 버튼
+            st.markdown("---")
+            col_add1, col_add2 = st.columns([4, 1])
+            with col_add1:
+                new_subtopic = st.text_input("새 소제목 추가", placeholder="직접 입력...", key=f"add_new_st_{selected_chapter}", label_visibility="collapsed")
+            with col_add2:
+                if st.button("➕ 추가", key=f"add_st_btn_{selected_chapter}"):
+                    if new_subtopic.strip() and new_subtopic not in chapter_data['subtopics']:
+                        chapter_data['subtopics'].append(new_subtopic)
+                        chapter_data['subtopic_data'][new_subtopic] = {'questions': [], 'answers': [], 'content': ''}
+                        st.rerun()
+        else:
+            st.info("소제목이 없습니다. 아래에서 추가하세요.")
     
     st.markdown("---")
     
