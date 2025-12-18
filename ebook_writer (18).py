@@ -1122,51 +1122,76 @@ with tabs[2]:
                 if topic_here:
                     st.session_state['topic'] = topic_here
             
-            if st.button("🚀 목차 생성하기", key="outline_btn"):
+           if st.button("🚀 목차 생성하기", key="outline_btn"):
                 if not st.session_state['topic']:
                     st.error("주제를 먼저 입력해주세요.")
                 else:
                     with st.spinner("설계 중..."):
                         outline_text = generate_outline(st.session_state['topic'], st.session_state['target_persona'], st.session_state['pain_points'])
+                        
+                        # 디버깅: AI 응답 확인
+                        st.text_area("🔍 AI 응답 (디버깅용)", outline_text, height=200)
+                        
                         lines = outline_text.split('\n')
                         chapters = []
                         current_chapter = None
                         chapter_subtopics = {}
                         
                         for line in lines:
+                            original_line = line
                             line = line.strip()
                             if not line:
                                 continue
                             
-                            # 챕터 감지: ## 로 시작하거나 PART/챕터 포함
-                            is_chapter = False
-                            if line.startswith('##'):
-                                is_chapter = True
-                            elif line.startswith('#') and ('PART' in line.upper() or '챕터' in line):
-                                is_chapter = True
-                            elif line.upper().startswith('PART ') or line.upper().startswith('PART:'):
-                                is_chapter = True
+                            # **굵은글씨** 제거
+                            line_clean = re.sub(r'\*\*(.+?)\*\*', r'\1', line)
+                            line_clean = line_clean.strip()
                             
-                            if is_chapter:
-                                # ## 제거하고 정리
-                                chapter_name = line.lstrip('#').strip()
-                                # **굵은글씨** 제거
+                            # 챕터 감지 (더 유연하게)
+                            is_chapter = False
+                            chapter_name = ""
+                            
+                            # ## 으로 시작
+                            if line_clean.startswith('##'):
+                                is_chapter = True
+                                chapter_name = line_clean.lstrip('#').strip()
+                            # # 으로 시작
+                            elif line_clean.startswith('#'):
+                                is_chapter = True
+                                chapter_name = line_clean.lstrip('#').strip()
+                            # PART 포함
+                            elif 'PART' in line_clean.upper():
+                                is_chapter = True
+                                chapter_name = line_clean
+                            # 챕터 포함
+                            elif '챕터' in line_clean:
+                                is_chapter = True
+                                chapter_name = line_clean
+                            
+                            if is_chapter and chapter_name:
+                                # 추가 정리
                                 chapter_name = re.sub(r'\*\*(.+?)\*\*', r'\1', chapter_name)
-                                if chapter_name:
+                                chapter_name = chapter_name.strip()
+                                if chapter_name and len(chapter_name) > 3:
                                     current_chapter = chapter_name
                                     chapters.append(current_chapter)
                                     chapter_subtopics[current_chapter] = []
                             
                             # 소제목 감지: -로 시작
-                            elif current_chapter and line.startswith('-'):
-                                subtopic = line.lstrip('- ').strip()
+                            elif current_chapter and line_clean.startswith('-'):
+                                subtopic = line_clean.lstrip('- ').strip()
                                 # **굵은글씨** 제거
                                 subtopic = re.sub(r'\*\*(.+?)\*\*', r'\1', subtopic)
-                                # 번호 제거 (1.1, 1.2 등)
+                                # 번호 제거
+                                subtopic = re.sub(r'^\d+[\.\)]\s*', '', subtopic)
                                 subtopic = re.sub(r'^\d+\.\d+\s*', '', subtopic)
-                                subtopic = re.sub(r'^\d+\.\s*', '', subtopic)
                                 if subtopic and len(subtopic) > 2:
                                     chapter_subtopics[current_chapter].append(subtopic)
+                        
+                        # 디버깅: 파싱 결과 확인
+                        st.write(f"📊 파싱 결과: {len(chapters)}개 챕터")
+                        for ch in chapters:
+                            st.write(f"  - {ch}: {len(chapter_subtopics.get(ch, []))}개 소제목")
                         
                         # 결과 저장
                         if chapters:
@@ -1188,9 +1213,8 @@ with tabs[2]:
                             
                             total_subtopics = sum(len(chapter_subtopics.get(ch, [])) for ch in chapters)
                             st.success(f"✅ {len(chapters)}개 챕터, {total_subtopics}개 소제목 생성됨!")
-                            st.rerun()
                         else:
-                            st.error("목차 생성 실패. 다시 시도해주세요.")
+                            st.error("목차 생성 실패. AI 응답을 확인해주세요.")
             
             if 'full_outline' in st.session_state and st.session_state['full_outline']:
                 st.markdown("**📋 현재 목차**")
