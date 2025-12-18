@@ -1138,13 +1138,21 @@ with tabs[2]:
                             if not line:
                                 continue
                             
-                            # 챕터 감지: ## 또는 PART로 시작
-                            if line.startswith('##') or 'PART' in line.upper():
+                            # 챕터 감지: ## 로 시작하거나 PART/챕터 포함
+                            is_chapter = False
+                            if line.startswith('##'):
+                                is_chapter = True
+                            elif line.startswith('#') and ('PART' in line.upper() or '챕터' in line):
+                                is_chapter = True
+                            elif line.upper().startswith('PART ') or line.upper().startswith('PART:'):
+                                is_chapter = True
+                            
+                            if is_chapter:
                                 # ## 제거하고 정리
                                 chapter_name = line.lstrip('#').strip()
                                 # **굵은글씨** 제거
                                 chapter_name = re.sub(r'\*\*(.+?)\*\*', r'\1', chapter_name)
-                                if chapter_name and 'PART' in chapter_name.upper():
+                                if chapter_name:
                                     current_chapter = chapter_name
                                     chapters.append(current_chapter)
                                     chapter_subtopics[current_chapter] = []
