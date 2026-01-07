@@ -1185,29 +1185,27 @@ with tabs[0]:
         
         st.markdown('<div class="info-card"><div class="info-card-title">좋은 주제의 조건</div><p>• 내가 직접 경험하고 성과를 낸 것</p><p>• 사람들이 돈 주고 배우고 싶어하는 것</p><p>• 구체적인 결과를 약속할 수 있는 것</p></div>', unsafe_allow_html=True)
         
-       if st.button("📊 적합도 분석하기 (선택)", key="analyze_btn"):
-    if not topic_input:
-        st.error("주제를 입력해주세요.")
-    else:
-        with st.spinner("분석 중..."):
-            result = analyze_topic_score(topic_input)
-            try:
-                # 마크다운 코드블록 제거 (```json ... ``` 형태 처리)
-                cleaned = re.sub(r'```json\s*', '', result)
-                cleaned = re.sub(r'```\s*', '', cleaned)
-                
-                json_match = re.search(r'\{[\s\S]*\}', cleaned)
-                if json_match:
-                    score_data = json.loads(json_match.group())
-                    st.session_state['topic_score'] = score_data.get('total_score', 0)
-                    st.session_state['topic_verdict'] = score_data.get('verdict', '분석 실패')
-                    st.session_state['score_details'] = score_data
-                else:
-                    st.error("분석 결과를 찾을 수 없습니다. 다시 시도해주세요.")
-            except Exception as e:
-                st.error(f"분석 결과 파싱 오류: {str(e)}")
-                with st.expander("디버그: AI 응답 확인"):
-                    st.code(result)
+if st.button("📊 적합도 분석하기 (선택)", key="analyze_btn"):
+            if not topic_input:
+                st.error("주제를 입력해주세요.")
+            else:
+                with st.spinner("분석 중..."):
+                    result = analyze_topic_score(topic_input)
+                    try:
+                        # 마크다운 코드블록 제거
+                        cleaned = re.sub(r'```json\s*', '', result)
+                        cleaned = re.sub(r'```\s*', '', cleaned)
+                        
+                        json_match = re.search(r'\{[\s\S]*\}', cleaned)
+                        if json_match:
+                            score_data = json.loads(json_match.group())
+                            st.session_state['topic_score'] = score_data.get('total_score', 0)
+                            st.session_state['topic_verdict'] = score_data.get('verdict', '분석 실패')
+                            st.session_state['score_details'] = score_data
+                        else:
+                            st.error("분석 결과를 찾을 수 없습니다. 다시 시도해주세요.")
+                    except Exception as e:
+                        st.error(f"분석 결과 파싱 오류: {str(e)}")
     
     with col2:
         st.markdown('<p class="section-label">Step 02</p>', unsafe_allow_html=True)
