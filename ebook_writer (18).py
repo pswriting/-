@@ -106,123 +106,298 @@ def save_api_key(api_key):
         return False
 
 # --- 페이지 설정 ---
-st.set_page_config(
-    page_title="전자책 작성 프로그램", 
-    layout="wide", 
-    page_icon="◆"
-)
-
-# --- 지구인사이트 스타일 CSS ---
 st.markdown("""
 <style>
-    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap');
     
-    * { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+    * { 
+        font-family: 'Pretendard', -apple-system, sans-serif; 
+        transition: all 0.3s ease;
+    }
     
-    .stDeployButton {display:none;} 
-    footer {visibility: hidden;}
-    #MainMenu {visibility: hidden;}
+    /* 다크 배경 + 그라데이션 */
+    .stApp { 
+        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+    }
     
-    [data-testid="collapsedControl"] { display: flex !important; visibility: visible !important; }
+    .main .block-container { 
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 2.5rem 3rem; 
+        max-width: 1200px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
     
-    .stApp { background: #ffffff; }
+    /* 사이드바 - 글래스모피즘 */
+    [data-testid="stSidebar"] { 
+        background: linear-gradient(180deg, rgba(26, 31, 58, 0.95) 0%, rgba(10, 14, 39, 0.95) 100%);
+        backdrop-filter: blur(20px);
+        border-right: 1px solid rgba(255, 215, 0, 0.2);
+    }
     
-    .main .block-container { background: #ffffff; padding: 2rem 3rem; max-width: 1200px; }
+    [data-testid="stSidebar"] * { 
+        color: #e8e8e8 !important; 
+    }
     
-    [data-testid="stSidebar"] { background: #ffffff; border-right: 1px solid #eeeeee; }
-    [data-testid="stSidebar"] * { color: #222222 !important; }
-    [data-testid="stSidebar"] .stProgress > div > div > div > div { background: #222222; border-radius: 10px; }
+    /* 골드 프로그레스 바 */
+    [data-testid="stSidebar"] .stProgress > div > div > div > div { 
+        background: linear-gradient(90deg, #FFD700, #FFA500);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        border-radius: 10px; 
+    }
     
-    .stMarkdown, .stText, p, span, label, .stMarkdown p { color: #222222 !important; line-height: 1.7; }
+    /* 텍스트 컬러 */
+    .stMarkdown, .stText, p, span, label { 
+        color: #e8e8e8 !important; 
+        line-height: 1.7; 
+    }
     
-    h1 { color: #111111 !important; font-weight: 700 !important; font-size: 2rem !important; letter-spacing: -0.5px; margin-bottom: 1rem !important; }
-    h2 { color: #111111 !important; font-weight: 700 !important; font-size: 1.4rem !important; margin-top: 2rem !important; margin-bottom: 1rem !important; }
-    h3 { color: #222222 !important; font-weight: 600 !important; font-size: 1.1rem !important; margin-bottom: 0.8rem !important; }
+    /* 헤딩 - 그라데이션 텍스트 */
+    h1 { 
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-family: 'Space Grotesk', sans-serif !important;
+        font-weight: 800 !important; 
+        font-size: 2.5rem !important; 
+        letter-spacing: -1px;
+        margin-bottom: 1rem !important;
+        text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+    }
     
-    .stTabs [data-baseweb="tab-list"] { background: transparent; gap: 0; border-bottom: 2px solid #eeeeee; padding: 0; }
-    .stTabs [data-baseweb="tab"] { background: transparent; color: #888888 !important; border-radius: 0; font-weight: 500; padding: 16px 24px; font-size: 15px; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
-    .stTabs [data-baseweb="tab"]:hover { color: #222222 !important; }
-    .stTabs [aria-selected="true"] { background: transparent !important; color: #111111 !important; font-weight: 700 !important; border-bottom: 2px solid #111111 !important; }
+    h2 { 
+        color: #FFD700 !important; 
+        font-weight: 700 !important; 
+        font-size: 1.6rem !important;
+        margin-top: 2rem !important;
+    }
     
-    .stButton > button { width: 100%; border-radius: 30px; font-weight: 600; background: #111111 !important; color: #ffffff !important; border: none !important; padding: 14px 32px; font-size: 15px; transition: all 0.2s; box-shadow: none; }
-    .stButton > button:hover { background: #333333 !important; color: #ffffff !important; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-1px); }
-    .stButton > button:active { transform: translateY(0); }
-    .stButton > button p, .stButton > button span, .stButton > button div, .stButton > button * { color: #ffffff !important; }
+    h3 { 
+        color: #FFA500 !important; 
+        font-weight: 600 !important; 
+        font-size: 1.2rem !important;
+    }
     
-    .stDownloadButton > button { background: #2d5a27 !important; color: #ffffff !important; border-radius: 30px; }
-    .stDownloadButton > button:hover { background: #3d7a37 !important; }
-    .stDownloadButton > button p, .stDownloadButton > button span, .stDownloadButton > button * { color: #ffffff !important; }
+    /* 탭 - 네온 효과 */
+    .stTabs [data-baseweb="tab-list"] { 
+        background: rgba(255, 255, 255, 0.03);
+        border-bottom: 2px solid rgba(255, 215, 0, 0.2);
+        border-radius: 12px 12px 0 0;
+        padding: 8px;
+    }
     
-    .stTextInput > div > div > input, .stTextArea > div > div > textarea { background: #ffffff !important; border: 1px solid #dddddd !important; border-radius: 8px !important; color: #222222 !important; padding: 14px 16px !important; font-size: 15px !important; }
-    .stTextInput > div > div > input:focus, .stTextArea > div > div > textarea:focus { border-color: #111111 !important; box-shadow: none !important; }
-    .stTextInput > div > div > input::placeholder, .stTextArea > div > div > textarea::placeholder { color: #aaaaaa !important; }
+    .stTabs [data-baseweb="tab"] { 
+        background: transparent;
+        color: #999 !important;
+        border-radius: 8px;
+        font-weight: 500;
+        padding: 12px 20px;
+        font-size: 14px;
+    }
     
-    .stSelectbox > div > div { background: #ffffff !important; border: 1px solid #dddddd !important; border-radius: 8px !important; }
-    .stSelectbox > div > div > div { color: #222222 !important; }
+    .stTabs [data-baseweb="tab"]:hover { 
+        color: #FFD700 !important;
+        background: rgba(255, 215, 0, 0.1);
+    }
     
-    [data-testid="stMetricValue"] { color: #111111 !important; font-size: 2rem !important; font-weight: 700 !important; }
-    [data-testid="stMetricLabel"] { color: #666666 !important; }
+    .stTabs [aria-selected="true"] { 
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2)) !important;
+        color: #FFD700 !important;
+        font-weight: 700 !important;
+        border: 1px solid rgba(255, 215, 0, 0.3) !important;
+        box-shadow: 0 4px 20px rgba(255, 215, 0, 0.2);
+    }
     
-    .stSuccess { background: #f0f9f0 !important; border: 1px solid #c8e6c9 !important; border-radius: 8px !important; }
-    .stSuccess p { color: #2e7d32 !important; }
-    .stWarning { background: #fff8e1 !important; border: 1px solid #ffecb3 !important; border-radius: 8px !important; }
-    .stWarning p { color: #f57c00 !important; }
-    .stError { background: #ffebee !important; border: 1px solid #ffcdd2 !important; border-radius: 8px !important; }
-    .stError p { color: #c62828 !important; }
-    .stInfo { background: #e3f2fd !important; border: 1px solid #bbdefb !important; border-radius: 8px !important; }
-    .stInfo p { color: #1565c0 !important; }
+    /* 버튼 - 프리미엄 골드 */
+    .stButton > button { 
+        width: 100%;
+        border-radius: 12px;
+        font-weight: 600;
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%) !important;
+        color: #000 !important;
+        border: none !important;
+        padding: 14px 32px;
+        font-size: 15px;
+        box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+        position: relative;
+        overflow: hidden;
+    }
     
-    hr { border: none !important; border-top: 1px solid #eeeeee !important; margin: 2rem 0 !important; }
-    .stProgress > div > div > div > div { background: #222222; border-radius: 10px; }
+    .stButton > button:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transition: left 0.5s;
+    }
     
-    .login-container { max-width: 400px; margin: 100px auto; padding: 40px; background: #ffffff; border: 1px solid #eeeeee; border-radius: 20px; text-align: center; }
-    .login-title { font-size: 28px; font-weight: 700; color: #111111; margin-bottom: 8px; }
-    .login-subtitle { font-size: 15px; color: #888888; margin-bottom: 30px; }
+    .stButton > button:hover:before {
+        left: 100%;
+    }
     
-    .hero-section { text-align: center; padding: 60px 20px; margin-bottom: 40px; }
-    .hero-label { font-size: 13px; font-weight: 600; color: #666666; letter-spacing: 3px; margin-bottom: 16px; text-transform: uppercase; }
-    .hero-title { font-size: 42px; font-weight: 800; color: #111111; margin-bottom: 16px; letter-spacing: -1px; line-height: 1.2; }
-    .hero-subtitle { font-size: 18px; color: #666666; font-weight: 400; }
+    .stButton > button:hover { 
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(255, 215, 0, 0.6);
+    }
     
-    .section-label { font-size: 12px; font-weight: 600; color: #888888; letter-spacing: 2px; margin-bottom: 8px; text-transform: uppercase; }
+    .stButton > button * { 
+        color: #000 !important; 
+        font-weight: 700;
+    }
     
-    .score-card { background: #f8f8f8; border-radius: 20px; padding: 50px 40px; text-align: center; }
-    .score-number { font-size: 80px; font-weight: 800; color: #111111; line-height: 1; margin-bottom: 8px; }
-    .score-label { color: #888888; font-size: 14px; font-weight: 500; }
+    /* 다운로드 버튼 - 블루 그라데이션 */
+    .stDownloadButton > button { 
+        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%) !important;
+        color: #fff !important;
+        box-shadow: 0 4px 20px rgba(74, 144, 226, 0.4);
+    }
     
-    .status-badge { display: inline-block; padding: 8px 20px; border-radius: 20px; font-weight: 600; font-size: 13px; margin-top: 20px; }
-    .status-excellent { background: #111111; color: #ffffff; }
-    .status-good { background: #f0f0f0; color: #333333; }
-    .status-warning { background: #fff3e0; color: #e65100; }
+    .stDownloadButton > button:hover {
+        box-shadow: 0 8px 30px rgba(74, 144, 226, 0.6);
+    }
     
-    .info-card { background: #f8f8f8; border-radius: 16px; padding: 24px; margin: 16px 0; }
-    .info-card-title { font-size: 12px; font-weight: 700; color: #888888; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase; }
-    .info-card p { color: #333333 !important; font-size: 15px; line-height: 1.8; margin: 8px 0; }
+    /* 입력 필드 - 다크 글래스 */
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea { 
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 215, 0, 0.2) !important;
+        border-radius: 12px !important;
+        color: #e8e8e8 !important;
+        padding: 14px 16px !important;
+        font-size: 15px !important;
+        backdrop-filter: blur(10px);
+    }
     
-    .title-card { background: #ffffff; border: 1px solid #eeeeee; border-radius: 16px; padding: 24px; margin: 12px 0; transition: all 0.2s; }
-    .title-card:hover { border-color: #cccccc; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
-    .title-card .card-number { font-size: 12px; font-weight: 600; color: #aaaaaa; margin-bottom: 8px; }
-    .title-card .main-title { color: #111111; font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-    .title-card .sub-title { color: #666666; font-size: 14px; margin-bottom: 16px; }
-    .title-card .reason { color: #444444; font-size: 14px; padding: 14px 16px; background: #f8f8f8; border-radius: 10px; line-height: 1.6; }
+    .stTextInput > div > div > input:focus,
+    .stTextArea > div > div > textarea:focus { 
+        border-color: #FFD700 !important;
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.3) !important;
+    }
     
-    .score-item { background: #ffffff; border: 1px solid #eeeeee; border-radius: 12px; padding: 16px 20px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; }
-    .score-item-label { color: #333333; font-weight: 500; font-size: 15px; }
-    .score-item-value { color: #111111; font-weight: 700; font-size: 20px; }
-    .score-item-reason { color: #666666; font-size: 14px; margin-top: 4px; line-height: 1.5; }
+    /* 알림 박스 - 글로우 효과 */
+    .stSuccess { 
+        background: rgba(76, 175, 80, 0.1) !important;
+        border: 1px solid rgba(76, 175, 80, 0.3) !important;
+        border-radius: 12px !important;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 0 20px rgba(76, 175, 80, 0.2);
+    }
     
-    .summary-box { background: #f8f8f8; border-radius: 12px; padding: 20px; margin-top: 20px; }
-    .summary-box p { color: #333333 !important; font-size: 15px; line-height: 1.7; }
+    .stSuccess p { 
+        color: #4CAF50 !important; 
+    }
     
-    .premium-footer { text-align: center; padding: 40px 20px; margin-top: 60px; border-top: 1px solid #eeeeee; }
-    .premium-footer-text { color: #888888; font-size: 14px; }
-    .premium-footer-author { color: #222222; font-weight: 600; }
+    .stWarning { 
+        background: rgba(255, 152, 0, 0.1) !important;
+        border: 1px solid rgba(255, 152, 0, 0.3) !important;
+        box-shadow: 0 0 20px rgba(255, 152, 0, 0.2);
+    }
     
-    .empty-state { text-align: center; padding: 60px 20px; background: #f8f8f8; border-radius: 16px; }
-    .empty-state p { color: #888888 !important; }
+    .stError { 
+        background: rgba(244, 67, 54, 0.1) !important;
+        border: 1px solid rgba(244, 67, 54, 0.3) !important;
+        box-shadow: 0 0 20px rgba(244, 67, 54, 0.2);
+    }
     
-    .quick-action-box { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border: 1px dashed #dee2e6; border-radius: 16px; padding: 24px; margin: 16px 0; text-align: center; }
-    .quick-action-box p { color: #495057 !important; font-size: 14px; margin-bottom: 12px; }
+    /* 스코어 카드 - 3D 효과 */
+    .score-card { 
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1));
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        border-radius: 24px;
+        padding: 50px 40px;
+        text-align: center;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        position: relative;
+    }
+    
+    .score-number { 
+        font-size: 90px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1;
+        margin-bottom: 8px;
+        text-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
+    }
+    
+    /* 히어로 섹션 - 임팩트 강화 */
+    .hero-section { 
+        text-align: center;
+        padding: 80px 20px;
+        margin-bottom: 40px;
+        position: relative;
+    }
+    
+    .hero-title { 
+        font-size: 56px;
+        font-weight: 900;
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 16px;
+        letter-spacing: -2px;
+        line-height: 1.1;
+        font-family: 'Space Grotesk', sans-serif;
+        animation: glow 3s ease-in-out infinite;
+    }
+    
+    @keyframes glow {
+        0%, 100% { filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5)); }
+        50% { filter: drop-shadow(0 0 40px rgba(255, 215, 0, 0.8)); }
+    }
+    
+    .hero-subtitle { 
+        font-size: 20px;
+        color: #999;
+        font-weight: 400;
+    }
+    
+    /* 정보 카드 - 글래스 효과 */
+    .info-card { 
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 215, 0, 0.2);
+        border-radius: 16px;
+        padding: 24px;
+        margin: 16px 0;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .info-card:hover {
+        border-color: rgba(255, 215, 0, 0.4);
+        box-shadow: 0 8px 30px rgba(255, 215, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    /* 로그인 화면 */
+    .login-container { 
+        max-width: 400px;
+        margin: 100px auto;
+        padding: 60px 40px;
+        background: rgba(26, 31, 58, 0.6);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        border-radius: 24px;
+        text-align: center;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    
+    .login-title { 
+        font-size: 36px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 8px;
+        font-family: 'Space Grotesk', sans-serif;
+    }
 </style>
 """, unsafe_allow_html=True)
 
