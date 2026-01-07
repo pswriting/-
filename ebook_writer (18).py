@@ -1132,6 +1132,7 @@ def regenerate_single_subtopic(chapter_title, subtopic_num, topic, current_subto
     # 첫 번째 줄만 반환, 불필요한 기호 제거
     first_line = result.strip().split('\n')[0]
     return first_line.lstrip('- ').lstrip('0123456789.').strip()
+
 def generate_marketing_copy(title, subtitle, topic, persona):
     prompt = f"""당신은 크몽에서 전자책을 수천 권 판매한 탑셀러입니다.
 
@@ -1185,14 +1186,14 @@ with tabs[0]:
         
         st.markdown('<div class="info-card"><div class="info-card-title">좋은 주제의 조건</div><p>• 내가 직접 경험하고 성과를 낸 것</p><p>• 사람들이 돈 주고 배우고 싶어하는 것</p><p>• 구체적인 결과를 약속할 수 있는 것</p></div>', unsafe_allow_html=True)
         
-if st.button("📊 적합도 분석하기 (선택)", key="analyze_btn"):
+        if st.button("📊 적합도 분석하기 (선택)", key="analyze_btn"):
             if not topic_input:
                 st.error("주제를 입력해주세요.")
             else:
                 with st.spinner("분석 중..."):
                     result = analyze_topic_score(topic_input)
                     try:
-                        # 마크다운 코드블록 제거
+                        # 마크다운 코드블록 제거 (```json ... ``` 형태 처리)
                         cleaned = re.sub(r'```json\s*', '', result)
                         cleaned = re.sub(r'```\s*', '', cleaned)
                         
@@ -1268,7 +1269,10 @@ with tabs[1]:
                 with st.spinner("생성 중..."):
                     titles_result = generate_titles_advanced(st.session_state['topic'], st.session_state['target_persona'], st.session_state['pain_points'])
                     try:
-                        json_match = re.search(r'\{[\s\S]*\}', titles_result)
+                        # 마크다운 코드블록 제거
+                        cleaned_titles = re.sub(r'```json\s*', '', titles_result)
+                        cleaned_titles = re.sub(r'```\s*', '', cleaned_titles)
+                        json_match = re.search(r'\{[\s\S]*\}', cleaned_titles)
                         if json_match:
                             st.session_state['generated_titles'] = json.loads(json_match.group())
                     except:
@@ -1569,6 +1573,7 @@ with tabs[3]:
                     st.session_state[chapter_edit_key] = False
                     st.rerun()
         st.markdown("---")
+    
     if selected_chapter not in st.session_state['chapters']:
         st.session_state['chapters'][selected_chapter] = {'subtopics': [], 'subtopic_data': {}}
     chapter_data = st.session_state['chapters'][selected_chapter]
@@ -1579,7 +1584,7 @@ with tabs[3]:
     
     st.markdown("---")
     
-# 소제목 전체 보기 (기존 코드를 이것으로 교체)
+    # 소제목 전체 보기
     with st.expander(f"📋 '{selected_chapter}' 소제목 ({len(chapter_data.get('subtopics', []))}개)", expanded=True):
         if chapter_data.get('subtopics'):
             for j, st_name in enumerate(chapter_data['subtopics']):
