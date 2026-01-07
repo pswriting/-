@@ -927,7 +927,7 @@ def generate_subtopic_content(subtopic_title, chapter_title, questions, answers,
 
 
 # ==========================================
-# 기타 AI 함수들
+# 기타 AI 함수들 (수정됨: JSON 형식 개선)
 # ==========================================
 def analyze_topic_score(topic):
     prompt = f"""'{topic}' 주제의 전자책 적합도를 분석해주세요.
@@ -941,17 +941,8 @@ def analyze_topic_score(topic):
 4. 작성 난이도 (전자책으로 만들기 쉬운가?)
 5. 지속성 (오래 팔릴 수 있는가?)
 
-반드시 아래 JSON 형식으로만 답변하세요:
-{{
-    "market": {{"score": 85, "reason": "이유"}},
-    "profit": {{"score": 80, "reason": "이유"}},
-    "differentiation": {{"score": 75, "reason": "이유"}},
-    "difficulty": {{"score": 90, "reason": "이유"}},
-    "sustainability": {{"score": 70, "reason": "이유"}},
-    "total_score": 80,
-    "verdict": "적합" 또는 "보통" 또는 "부적합",
-    "summary": "종합 의견 2~3문장"
-}}"""
+아래 JSON 형식으로만 답변하세요. 다른 텍스트 없이 JSON만 출력하세요:
+{{"market": {{"score": 85, "reason": "이유"}}, "profit": {{"score": 80, "reason": "이유"}}, "differentiation": {{"score": 75, "reason": "이유"}}, "difficulty": {{"score": 90, "reason": "이유"}}, "sustainability": {{"score": 70, "reason": "이유"}}, "total_score": 80, "verdict": "적합", "summary": "종합 의견"}}"""
     return ask_ai("전자책 시장 분석가", prompt, temperature=0.3)
 
 
@@ -974,17 +965,8 @@ def generate_titles_advanced(topic, persona, pain_points):
 - "~하는 법", "~하기", "완벽한", "쉬운"
 - 물음표로 끝나는 평범한 질문형
 
-형식 (JSON만 출력):
-{{
-    "titles": [
-        {{
-            "title": "7자 이내 임팩트 제목",
-            "subtitle": "15자 이내 보조 설명",
-            "concept": "이 제목의 핵심 컨셉",
-            "why_works": "왜 사람들이 이 제목에 끌리는지"
-        }}
-    ]
-}}"""
+아래 JSON 형식으로만 출력하세요. 다른 텍스트 없이 JSON만:
+{{"titles": [{{"title": "제목1", "subtitle": "부제1", "concept": "컨셉1", "why_works": "이유1"}}, {{"title": "제목2", "subtitle": "부제2", "concept": "컨셉2", "why_works": "이유2"}}, {{"title": "제목3", "subtitle": "부제3", "concept": "컨셉3", "why_works": "이유3"}}]}}"""
     return ask_ai("베스트셀러 작가", prompt, temperature=0.9)
 
 
@@ -1157,6 +1139,43 @@ def generate_marketing_copy(title, subtitle, topic, persona):
 
 
 # ==========================================
+# JSON 파싱 헬퍼 함수
+# ==========================================
+def parse_json_safely(text):
+    """JSON을 안전하게 파싱하는 헬퍼 함수"""
+    if not text:
+        return None
+    
+    # 마크다운 코드블록 제거
+    cleaned = re.sub(r'```json\s*', '', text)
+    cleaned = re.sub(r'```\s*', '', cleaned)
+    cleaned = cleaned.strip()
+    
+    # JSON 객체 찾기
+    json_match = re.search(r'\{[\s\S]*\}', cleaned)
+    if not json_match:
+        return None
+    
+    json_str = json_match.group()
+    
+    # 파싱 시도
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError:
+        # 작은따옴표를 큰따옴표로 변환 시도
+        try:
+            json_str = json_str.replace("'", '"')
+            return json.loads(json_str)
+        except json.JSONDecodeError:
+            # 줄바꿈 제거 후 재시도
+            try:
+                json_str = re.sub(r'\s+', ' ', json_str)
+                return json.loads(json_str)
+            except json.JSONDecodeError:
+                return None
+
+
+# ==========================================
 # 메인 UI
 # ==========================================
 st.markdown("""
@@ -1192,21 +1211,16 @@ with tabs[0]:
             else:
                 with st.spinner("분석 중..."):
                     result = analyze_topic_score(topic_input)
-                    try:
-                        # 마크다운 코드블록 제거 (```json ... ``` 형태 처리)
-                        cleaned = re.sub(r'```json\s*', '', result)
-                        cleaned = re.sub(r'```\s*', '', cleaned)
-                        
-                        json_match = re.search(r'\{[\s\S]*\}', cleaned)
-                        if json_match:
-                            score_data = json.loads(json_match.group())
-                            st.session_state['topic_score'] = score_data.get('total_score', 0)
-                            st.session_state['topic_verdict'] = score_data.get('verdict', '분석 실패')
-                            st.session_state['score_details'] = score_data
-                        else:
-                            st.error("분석 결과를 찾을 수 없습니다. 다시 시도해주세요.")
-                    except Exception as e:
-                        st.error(f"분석 결과 파싱 오류: {str(e)}")
+                    score_data = parse_json_safely(result)
+                    
+                    if score_data:
+                        st.session_state['topic_score'] = score_data.get('total_score', 0)
+                        st.session_state['topic_verdict'] = score_data.get('verdict', '분석 완료')
+                        st.session_state['score_details'] = score_data
+                    else:
+                        st.error("분석 결과 파싱 오류. 다시 시도해주세요.")
+                        with st.expander("디버그: AI 응답 확인"):
+                            st.code(result)
     
     with col2:
         st.markdown('<p class="section-label">Step 02</p>', unsafe_allow_html=True)
@@ -1268,16 +1282,14 @@ with tabs[1]:
             else:
                 with st.spinner("생성 중..."):
                     titles_result = generate_titles_advanced(st.session_state['topic'], st.session_state['target_persona'], st.session_state['pain_points'])
-                    try:
-                        # 마크다운 코드블록 제거
-                        cleaned_titles = re.sub(r'```json\s*', '', titles_result)
-                        cleaned_titles = re.sub(r'```\s*', '', cleaned_titles)
-                        json_match = re.search(r'\{[\s\S]*\}', cleaned_titles)
-                        if json_match:
-                            st.session_state['generated_titles'] = json.loads(json_match.group())
-                    except:
+                    titles_data = parse_json_safely(titles_result)
+                    
+                    if titles_data:
+                        st.session_state['generated_titles'] = titles_data
+                    else:
                         st.session_state['generated_titles'] = None
                         st.markdown(titles_result)
+        
         if st.session_state.get('generated_titles'):
             titles_data = st.session_state['generated_titles']
             if 'titles' in titles_data:
